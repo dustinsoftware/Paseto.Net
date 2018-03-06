@@ -14,10 +14,12 @@ namespace Paseto
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
-		public string Sign(string payload)
+		public string Sign(string payload, string footer = "")
 		{
+			if (payload == null) throw new ArgumentNullException(nameof(payload));
+			if (footer == null) throw new ArgumentNullException(nameof(footer));
+
 			string header = "v2.public.";
-			string footer = "";
 
 			string m2 = PAE(new[] { header, payload, footer });
 
@@ -26,17 +28,20 @@ namespace Paseto
 			{
 				var data = Encoding.UTF8.GetBytes(m2);
 
-				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, data)))}";
+				string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
+				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, data)))}{footerToAppend}";
 			}
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
 		public ParsedPaseto Parse(string signedMessage)
 		{
-			const string footer = "";
+			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
+
 			const string header = "v2.public.";
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");
 			var tokenParts = signedMessage.Split('.');
+			string footer = Encoding.UTF8.GetString(FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : ""));
 
 			var bytes = FromBase64Url(tokenParts[2]);
 			Assert(bytes.Length >= 64, "Token was less than 64 bytes long");
@@ -53,6 +58,7 @@ namespace Paseto
 			return new ParsedPaseto
 			{
 				Payload = Encoding.UTF8.GetString(payload),
+				Footer = footer,
 			};
 		}
 
@@ -109,5 +115,6 @@ namespace Paseto
 	public sealed class ParsedPaseto
 	{
 		public string Payload { get; set; }
+		public string Footer { get; set; }
 	}
 }

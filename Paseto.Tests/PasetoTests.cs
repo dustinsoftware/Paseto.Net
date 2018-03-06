@@ -48,10 +48,13 @@ namespace Paseto.Tests
 
 		[Theory]
 		[InlineData("v2.public.xnHHprS7sEyjP5vWpOvHjAP2f0HER7SWfPuehZ8QIctJRPTrlZLtRCk9_iNdugsrqJoGaO4k9cDBq3TOXu24AA", "")]
+		[InlineData("v2.public.Qf-w0RdU2SDGW_awMwbfC0Alf_nd3ibUdY3HigzU7tn_4MPMYIKAJk_J_yKYltxrGlxEdrWIqyfjW81njtRyDw.Q3VvbiBBbHBpbnVz", "", "Cuon Alpinus")]
 		[InlineData("v2.public.RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM", "Frank Denis rocks")]
-		public void Parse(string message, string payload)
+		public void Parse(string message, string payload, string footer = "")
 		{
-			Assert.Equal(payload, _paseto.Parse(message).Payload);
+			var parsed = _paseto.Parse(message);
+			Assert.Equal(payload, parsed.Payload);
+			Assert.Equal(footer, parsed.Footer);
 		}
 
 		[Theory]
