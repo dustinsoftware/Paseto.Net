@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NSec.Cryptography;
 
@@ -14,22 +16,55 @@ namespace Paseto
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
-		// public string Sign(string payload)
-		// {
-		// 	string header = "v2.public.";
-		// 	string footer = "";
+		public string Sign(string payload)
+		{
+			string header = "v2.public.";
+			string footer = "";
 
-		// 	string m2 = PAE(new[] { header, payload, footer });
+			string m2 = PAE(new[] { header, payload, footer });
 
-		// 	var encrypter = new Ed25519();			
-		// 	using (var key = Key.Import(encrypter, _options.Key, KeyBlobFormat.RawPrivateKey))
-		// 	{
-		// 		var data = Encoding.UTF8.GetBytes(m2);
-		// 		var signature = encrypter.Sign(key, data);
+			var encryptAlgorithm = new Ed25519();
+			using (var key = Key.Import(encryptAlgorithm, _options.PrivateKey, KeyBlobFormat.RawPrivateKey))
+			{
+				var data = Encoding.UTF8.GetBytes(m2);
 
-		// 		return $"{header}{Base64EncodeUnpadded(payload + sig)}";
-		// 	}
-		// }
+				return $"{header}{Base64EncodeUnpadded(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, data)))}";
+			}
+		}
+
+		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
+		public ParsedPaseto Parse(string signedMessage)
+		{
+			const string footer = "";
+			const string header = "v2.public.";
+			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");
+			var tokenParts = signedMessage.Split('.');
+
+			var bytes = Convert.FromBase64String(PadBase64String(tokenParts[2]));
+			Assert(bytes.Length > 64, "Token was less than 64 bytes long");
+			byte[] signature = bytes.Skip(bytes.Length - 64).ToArray();
+			byte[] payload = bytes.Take(bytes.Length - 64).ToArray();
+
+			string m2 = PAE(new[] { header, Encoding.UTF8.GetString(payload), footer });
+
+			var encryptAlgorithm = new Ed25519();
+
+			var publicKey = PublicKey.Import(encryptAlgorithm, _options.PublicKey, KeyBlobFormat.RawPublicKey);
+			encryptAlgorithm.Verify(publicKey, Encoding.UTF8.GetBytes(m2), signature);
+
+			return new ParsedPaseto
+			{
+				Payload = Encoding.UTF8.GetString(payload),
+			};
+		}
+
+		public void Assert(bool condition, string reason)
+		{
+			if (!condition)
+			{
+				throw new FormatException("The format of the message or signature was invalid. " + reason);
+			}
+		}
 
 		// https://github.com/paragonie/paseto/blob/785723a02bc27e0e90821b0852d9e86573bbe63d/docs/01-Protocol-Versions/Common.md#authentication-padding
 		public static string PAE(IReadOnlyList<string> pieces)
@@ -43,7 +78,7 @@ namespace Paseto
 			return output;
 		}
 
-		private static string LE64(int source) 
+		public static string LE64(int source)
 		{
 			string str = "";
 			for (int i = 0; i < 8; i++)
@@ -54,21 +89,27 @@ namespace Paseto
 			return str;
 		}
 
-		public static string Base64EncodeUnpadded(string source) => Convert.ToBase64String(Encoding.UTF8.GetBytes(source)).Replace("=","");
+		public static string Base64EncodeUnpadded(IEnumerable<byte> source) => Convert.ToBase64String(source.ToArray())
+			.Replace("=","")
+			.Replace('+', '-')
+			.Replace('/', '_');
+
+		// Replace some characters in the base 64 string and add padding so .NET can parse it
+		public static string PadBase64String(string source) => source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
+			.Replace('-', '+')
+			.Replace('_', '/');
 
 		private Options _options;
 	}
 
 	public sealed class Options
 	{
-		public byte[] Key { get; set; }
+		public byte[] PublicKey { get; set; }
+		public byte[] PrivateKey { get; set; }
 	}
 
-	public sealed class DecryptedPaseto
+	public sealed class ParsedPaseto
 	{
-		public string Version { get; set; }
-		public string Purpose { get; set; }
 		public string Payload { get; set; }
-		public string Signature { get; set; }
 	}
 }
