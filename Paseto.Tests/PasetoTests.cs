@@ -21,15 +21,5 @@ namespace Paseto.Tests
 			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Paseto.PAE(new[] { "" }));
 			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Paseto.PAE(new[] { "test" }));
 		}
-
-		[Fact]
-		public void Test1()
-		{
-			var paseto = new Paseto(new Options { Key = Convert.FromBase64String("loVRUvzZuA/xi5qU8DA32saLpUJ0bJl9eqmgyVsIxuM=")} );
-			
-			var signature = Convert.ToBase64String(paseto.Sign("Frank Denis rocks"));
-	
-			Assert.Equal("tQAu6EGhRKILQnGHu0lUrq+VLDXm3CtAeXAbxuOlh2Ms1fF+RW+8gAnyOlPLZtmbPhPlO+ipsu7UIkTXSvjCCQ==", signature);
-		}
 	}
 }
