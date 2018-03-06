@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Paseto.Tests
 {
+	// Tests from here https://github.com/paragonie/paseto/blob/master/tests/Version2VectorTest.php
 	public class PasetoTests
 	{
 		private Paseto _paseto;
@@ -38,25 +39,26 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
-		public void Sign()
+		public void RoundTrip()
 		{
 			const string payload = "Frank Denis rocks";
 			string signature = _paseto.Sign(payload);
 			Assert.Equal(payload, _paseto.Parse(signature).Payload);
 		}
 
-		[Fact]
-		public void Parse()
+		[Theory]
+		[InlineData("v2.public.xnHHprS7sEyjP5vWpOvHjAP2f0HER7SWfPuehZ8QIctJRPTrlZLtRCk9_iNdugsrqJoGaO4k9cDBq3TOXu24AA", "")]
+		[InlineData("v2.public.RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM", "Frank Denis rocks")]
+		public void Parse(string message, string payload)
 		{
-			var parsed = _paseto.Parse("v2.public.RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM");
-			Assert.Equal("Frank Denis rocks", parsed.Payload);
+			Assert.Equal(payload, _paseto.Parse(message).Payload);
 		}
 
 		[Theory]
 		[InlineData("RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM")]
 		public void EncodingTest(string source)
 		{
-			Convert.FromBase64String(Paseto.PadBase64String(source));
+			Paseto.FromBase64Url(source);
 		}
 
 		[Fact]

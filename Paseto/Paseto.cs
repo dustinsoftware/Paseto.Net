@@ -28,7 +28,7 @@ namespace Paseto
 			{
 				var data = Encoding.UTF8.GetBytes(m2);
 
-				return $"{header}{Base64EncodeUnpadded(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, data)))}";
+				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, data)))}";
 			}
 		}
 
@@ -40,8 +40,8 @@ namespace Paseto
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");
 			var tokenParts = signedMessage.Split('.');
 
-			var bytes = Convert.FromBase64String(PadBase64String(tokenParts[2]));
-			Assert(bytes.Length > 64, "Token was less than 64 bytes long");
+			var bytes = FromBase64Url(tokenParts[2]);
+			Assert(bytes.Length >= 64, "Token was less than 64 bytes long");
 			byte[] signature = bytes.Skip(bytes.Length - 64).ToArray();
 			byte[] payload = bytes.Take(bytes.Length - 64).ToArray();
 
@@ -89,15 +89,15 @@ namespace Paseto
 			return str;
 		}
 
-		public static string Base64EncodeUnpadded(IEnumerable<byte> source) => Convert.ToBase64String(source.ToArray())
+		public static string ToBase64Url(IEnumerable<byte> source) => Convert.ToBase64String(source.ToArray())
 			.Replace("=","")
 			.Replace('+', '-')
 			.Replace('/', '_');
 
 		// Replace some characters in the base 64 string and add padding so .NET can parse it
-		public static string PadBase64String(string source) => source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
+		public static byte[] FromBase64Url(string source) => Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
 			.Replace('-', '+')
-			.Replace('_', '/');
+			.Replace('_', '/'));
 
 		private Options _options;
 	}
