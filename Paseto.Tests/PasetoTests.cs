@@ -15,6 +15,14 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
+		public void PAE()
+		{
+			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Paseto.PAE(new List<string>()));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Paseto.PAE(new[] { "" }));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Paseto.PAE(new[] { "test" }));
+		}
+
+		[Fact]
 		public void Test1()
 		{
 			var paseto = new Paseto(new Options { Key = Convert.FromBase64String("loVRUvzZuA/xi5qU8DA32saLpUJ0bJl9eqmgyVsIxuM=")} );
