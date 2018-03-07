@@ -25,9 +25,9 @@ namespace Paseto.Tests
 		[Fact]
 		public void PAE()
 		{
-			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PAE(new List<byte[]>())));
-			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PAE(new[] { Encoding.UTF8.GetBytes("") })));
-			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Encoding.UTF8.GetString(Paseto.PAE(new[] { Encoding.UTF8.GetBytes("test") })));
+			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PreAuthEncode(new List<byte[]>())));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PreAuthEncode(new[] { Encoding.UTF8.GetBytes("") })));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Encoding.UTF8.GetString(Paseto.PreAuthEncode(new[] { Encoding.UTF8.GetBytes("test") })));
 		}
 
 		[Fact]
