@@ -72,17 +72,6 @@ namespace Paseto
 			}
 		}
 
-		public string XChaCha20RoundTrip(byte[] nonceBytes, byte[] symmetricKey, byte[] associatedData, string payload)
-		{
-			var encryptAlgorithm = new XChaCha20Poly1305();
-			byte[] encryptedPayload;
-			using (var key = Key.Import(encryptAlgorithm, symmetricKey, KeyBlobFormat.RawSymmetricKey))
-			{
-				encryptedPayload = encryptAlgorithm.Encrypt(key, new Nonce(nonceBytes, 0), associatedData, Encoding.UTF8.GetBytes(payload));
-				return Encoding.UTF8.GetString(encryptAlgorithm.Decrypt(key, new Nonce(nonceBytes, 0), associatedData, encryptedPayload));
-			}
-		}
-
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
 		public string Sign(string payload, string footer = "")
 		{

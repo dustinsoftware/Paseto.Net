@@ -23,27 +23,6 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
-		public void XChaCha20RoundTrip()
-		{
-			// https://github.com/jedisct1/libsodium/blob/5b4db091df123f7c7d42be8d3b787d07c0c61f3e/test/default/aead_xchacha20poly1305.c
-			var nonce = new byte[24];
-
-			var key = new byte[]
-			{
-				0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,
-				0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f,
-				0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97,
-				0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f
-			};
-
-			var associatedData = new byte[] { 0x50, 0x51, 0x52, 0x53, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7 };
-
-			string payload = "Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it.";
-			Assert.Equal(payload, _paseto.XChaCha20RoundTrip(nonce, key, associatedData, payload));
-
-		}
-
-		[Fact]
 		public void PAE()
 		{
 			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PAE(new List<byte[]>())));
