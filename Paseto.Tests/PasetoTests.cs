@@ -68,11 +68,12 @@ namespace Paseto.Tests
 
 		[Theory]
 		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNkIWACdHuLiJiW16f2GuGYA")]
+		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNreCcZAS0iGVlzdHjTf2ilg.Q3VvbiBBbHBpbnVz", "Cuon Alpinus")]
 		[InlineData("Love is stronger than hate or fear", "v2.local.BEsKs5AolRYDb_O-bO-lwHWUextpShFSXlvv8MsrNZs3vTSnGQG4qRM9ezDl880jFwknSA6JARj2qKhDHnlSHx1GSCizfcF019U")]
-		public void Encrypt(string payload, string message)
+		public void Encrypt(string payload, string message, string footer = "")
 		{
 			var nonce = new byte[24];
-			Assert.Equal(message, _paseto.Encrypt(payload, nonce: nonce));
+			Assert.Equal(message, _paseto.Encrypt(payload, footer, nonce));
 		}
 
 		[Fact]
