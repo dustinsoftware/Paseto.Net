@@ -46,9 +46,9 @@ namespace Paseto.Tests
 		[Fact]
 		public void PAE()
 		{
-			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Paseto.PAE(new List<string>()));
-			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Paseto.PAE(new[] { "" }));
-			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Paseto.PAE(new[] { "test" }));
+			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PAE(new List<byte[]>())));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PAE(new[] { Encoding.UTF8.GetBytes("") })));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Encoding.UTF8.GetString(Paseto.PAE(new[] { Encoding.UTF8.GetBytes("test") })));
 		}
 
 		[Fact]
@@ -80,6 +80,15 @@ namespace Paseto.Tests
 
 		[Theory]
 		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNUtKpdy5KXjKfpSKrOlqQvQ")]
+		public void EncryptWithNullKey(string payload, string message)
+		{
+			var paseto = new Paseto(new Options { SymmetricKey = new byte[32] });
+			var nonce = new byte[24];
+			Assert.Equal(message, paseto.Encrypt(payload, nonce: nonce));
+		}
+
+		[Theory]
+		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNkIWACdHuLiJiW16f2GuGYA")]
 		[InlineData("Love is stronger than hate or fear", "v2.local.BEsKs5AolRYDb_O-bO-lwHWUextpShFSXlvv8MsrNZs3vTSnGQG4qRM9ezDl880jFwknSA6JARj2qKhDHnlSHx1GSCizfcF019U")]
 		public void Encrypt(string payload, string message)
 		{

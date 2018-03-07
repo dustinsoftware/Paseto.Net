@@ -35,12 +35,12 @@ namespace Paseto
 				macBytes = macAlgorithm.Mac(key, Encoding.UTF8.GetBytes(payload), 24);
 			}
 
-			string preAuth = PAE(new[] { header, Encoding.UTF8.GetString(macBytes), footer });
+			byte[] preAuth = PAE(new[] { Encoding.UTF8.GetBytes(header), macBytes, Encoding.UTF8.GetBytes(footer) });
 			var encryptAlgorithm = new XChaCha20Poly1305();
 			byte[] encryptedPayload;
 			using (var key = Key.Import(encryptAlgorithm, _options.SymmetricKey, KeyBlobFormat.RawSymmetricKey))
 			{
-				encryptedPayload = encryptAlgorithm.Encrypt(key, new Nonce(macBytes, 0), Encoding.UTF8.GetBytes(preAuth), Encoding.UTF8.GetBytes(payload));
+				encryptedPayload = encryptAlgorithm.Encrypt(key, new Nonce(macBytes, 0), preAuth, Encoding.UTF8.GetBytes(payload));
 			}
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
@@ -62,13 +62,13 @@ namespace Paseto
 			byte[] nonceBytes = bytes.Take(24).ToArray();
 			byte[] payload = bytes.Skip(24).ToArray();
 
-			string preAuth = PAE(new[] { header, Encoding.UTF8.GetString(nonceBytes), footer });
+			byte[] preAuth = PAE(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, Encoding.UTF8.GetBytes(footer) });
 
 			var encryptAlgorithm = new XChaCha20Poly1305();
 
 			using (var key = Key.Import(encryptAlgorithm, _options.SymmetricKey, KeyBlobFormat.RawSymmetricKey))
 			{
-				return Encoding.UTF8.GetString(encryptAlgorithm.Decrypt(key, new Nonce(nonceBytes, 0), Encoding.UTF8.GetBytes(preAuth), payload));
+				return Encoding.UTF8.GetString(encryptAlgorithm.Decrypt(key, new Nonce(nonceBytes, 0), preAuth, payload));
 			}
 		}
 
@@ -91,15 +91,13 @@ namespace Paseto
 
 			string header = "v2.public.";
 
-			string m2 = PAE(new[] { header, payload, footer });
+			byte[] m2 = PAE(new[] { header, payload, footer }.Select(Encoding.UTF8.GetBytes).ToArray());
 
 			var encryptAlgorithm = new Ed25519();
 			using (var key = Key.Import(encryptAlgorithm, _options.PrivateKey, KeyBlobFormat.RawPrivateKey))
 			{
-				var data = Encoding.UTF8.GetBytes(m2);
-
 				string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
-				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, data)))}{footerToAppend}";
+				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, m2)))}{footerToAppend}";
 			}
 		}
 
@@ -118,12 +116,12 @@ namespace Paseto
 			byte[] signature = bytes.Skip(bytes.Length - 64).ToArray();
 			byte[] payload = bytes.Take(bytes.Length - 64).ToArray();
 
-			string m2 = PAE(new[] { header, Encoding.UTF8.GetString(payload), footer });
+			byte[] m2 = PAE(new[] { Encoding.UTF8.GetBytes(header), payload, Encoding.UTF8.GetBytes(footer) });
 
 			var encryptAlgorithm = new Ed25519();
 
 			var publicKey = PublicKey.Import(encryptAlgorithm, _options.PublicKey, KeyBlobFormat.RawPublicKey);
-			encryptAlgorithm.Verify(publicKey, Encoding.UTF8.GetBytes(m2), signature);
+			encryptAlgorithm.Verify(publicKey, m2, signature);
 
 			return new ParsedPaseto
 			{
@@ -141,23 +139,23 @@ namespace Paseto
 		}
 
 		// https://github.com/paragonie/paseto/blob/785723a02bc27e0e90821b0852d9e86573bbe63d/docs/01-Protocol-Versions/Common.md#authentication-padding
-		public static string PAE(IReadOnlyList<string> pieces)
+		public static byte[] PAE(IReadOnlyList<byte[]> pieces)
 		{
-			string output = LE64(pieces.Count);
-			foreach (string piece in pieces)
+			byte[] output = LE64(pieces.Count);
+			foreach (byte[] piece in pieces)
 			{
-				output += LE64(piece.Length);
-				output += piece;
+				output = output.Concat(LE64(piece.Length)).ToArray();
+				output = output.Concat(piece).ToArray();
 			}
 			return output;
 		}
 
-		public static string LE64(int source)
+		public static byte[] LE64(int source)
 		{
-			string str = "";
+			byte[] str = new byte[0];
 			for (int i = 0; i < 8; i++)
 			{
-				str += Encoding.ASCII.GetString(new[] { (byte) (source & 255) });
+				str = str.Concat(new[] { (byte) (source & 255) }).ToArray();
 				source = source >> 8;
 			}
 			return str;
