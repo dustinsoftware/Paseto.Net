@@ -55,14 +55,14 @@ namespace Paseto
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.local.");
 
 			var tokenParts = signedMessage.Split('.');
-			string footer = Encoding.UTF8.GetString(FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : ""));
+			byte[] footer = FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : "");
 
 			var bytes = FromBase64Url(tokenParts[2]);
 			Assert(bytes.Length >= 24, "Token was less than 24 bytes long");
 			byte[] nonceBytes = bytes.Take(24).ToArray();
 			byte[] payload = bytes.Skip(24).ToArray();
 
-			byte[] preAuth = PAE(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, Encoding.UTF8.GetBytes(footer) });
+			byte[] preAuth = PAE(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, footer });
 
 			var encryptAlgorithm = new XChaCha20Poly1305();
 
@@ -98,14 +98,14 @@ namespace Paseto
 			const string header = "v2.public.";
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");
 			var tokenParts = signedMessage.Split('.');
-			string footer = Encoding.UTF8.GetString(FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : ""));
+			byte[] footer = FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : "");
 
 			var bytes = FromBase64Url(tokenParts[2]);
 			Assert(bytes.Length >= 64, "Token was less than 64 bytes long");
 			byte[] signature = bytes.Skip(bytes.Length - 64).ToArray();
 			byte[] payload = bytes.Take(bytes.Length - 64).ToArray();
 
-			byte[] m2 = PAE(new[] { Encoding.UTF8.GetBytes(header), payload, Encoding.UTF8.GetBytes(footer) });
+			byte[] m2 = PAE(new[] { Encoding.UTF8.GetBytes(header), payload, footer });
 
 			var encryptAlgorithm = new Ed25519();
 
@@ -115,7 +115,7 @@ namespace Paseto
 			return new ParsedPaseto
 			{
 				Payload = Encoding.UTF8.GetString(payload),
-				Footer = footer,
+				Footer = Encoding.UTF8.GetString(footer),
 			};
 		}
 
