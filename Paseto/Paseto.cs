@@ -62,42 +62,24 @@ namespace Paseto
 
 		public void Assert(bool condition, string reason)
 		{
-			if (!condition)
-			{
-				throw new FormatException("The format of the message or signature was invalid. " + reason);
-			}
+			if (!condition) throw new FormatException("The format of the message or signature was invalid. " + reason);
 		}
 
 		// https://github.com/paragonie/paseto/blob/785723a02bc27e0e90821b0852d9e86573bbe63d/docs/01-Protocol-Versions/Common.md#authentication-padding
-		public static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces)
-		{
-			byte[] output = ConvertToLittleEndian(pieces.Count);
-			foreach (byte[] piece in pieces)
-			{
-				output = output.Concat(ConvertToLittleEndian(piece.Length)).ToArray();
-				output = output.Concat(piece).ToArray();
-			}
-			return output;
-		}
+		public static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces) =>
+			BitConverter.GetBytes((ulong) pieces.Count)
+			.Concat(pieces.SelectMany(piece => BitConverter.GetBytes((ulong) piece.Length).Concat(piece)))
+			.ToArray();
 
-		public static byte[] ConvertToLittleEndian(int source)
-		{
-			byte[] output = new byte[0];
-			for (int i = 0; i < 8; i++)
-			{
-				output = output.Concat(new[] { (byte)(source & 255) }).ToArray();
-				source = source >> 8;
-			}
-			return output;
-		}
-
-		public static string ToBase64Url(IEnumerable<byte> source) => Convert.ToBase64String(source.ToArray())
+		public static string ToBase64Url(IEnumerable<byte> source) =>
+			Convert.ToBase64String(source.ToArray())
 			.Replace("=", "")
 			.Replace('+', '-')
 			.Replace('/', '_');
 
 		// Replace some characters in the base 64 string and add padding so .NET can parse it
-		public static byte[] FromBase64Url(string source) => Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
+		public static byte[] FromBase64Url(string source) =>
+			Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
 			.Replace('-', '+')
 			.Replace('_', '/'));
 
