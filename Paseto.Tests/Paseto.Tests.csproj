@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\nsec\src\Cryptography\NSec.Cryptography.csproj" />
     <ProjectReference Include="..\Paseto\Paseto.csproj" />
   </ItemGroup>
 
