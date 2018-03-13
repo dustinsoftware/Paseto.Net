@@ -4,17 +4,11 @@ using System.Linq;
 using System.Text;
 using Paseto.Internal.Chaos.NaCl;
 
-namespace Paseto
+namespace Paseto.PublicAuthentication
 {
-	public sealed class Paseto
+	public static class PasetoUtility
 	{
-		public Paseto(Options options)
-		{
-			_options = options;
-		}
-
-		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
-		public string Sign(string payload, string footer = "")
+		public static string Sign(byte[] privateKey, string payload, string footer = "")
 		{
 			if (payload == null) throw new ArgumentNullException(nameof(payload));
 			if (footer == null) throw new ArgumentNullException(nameof(footer));
@@ -25,13 +19,13 @@ namespace Paseto
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 
-			byte[] signature = Ed25519.Sign(m2, _options.PrivateKey);
+			byte[] signature = Ed25519.Sign(m2, privateKey);
 
 			return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
-		public ParsedPaseto Parse(string signedMessage)
+		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
 		{
 			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
 
@@ -47,7 +41,7 @@ namespace Paseto
 
 			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, footer });
 
-			if (!Ed25519.Verify(signature, m2, _options.PublicKey))
+			if (!Ed25519.Verify(signature, m2, publicKey))
 				return null;
 
 			return new ParsedPaseto
@@ -57,7 +51,7 @@ namespace Paseto
 			};
 		}
 
-		public void Assert(bool condition, string reason)
+		public static void Assert(bool condition, string reason)
 		{
 			if (!condition) throw new FormatException("The format of the message or signature was invalid. " + reason);
 		}
@@ -79,19 +73,5 @@ namespace Paseto
 			Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
 			.Replace('-', '+')
 			.Replace('_', '/'));
-
-		private Options _options;
-	}
-
-	public sealed class Options
-	{
-		public byte[] PublicKey { get; set; }
-		public byte[] PrivateKey { get; set; }
-	}
-
-	public sealed class ParsedPaseto
-	{
-		public string Payload { get; set; }
-		public string Footer { get; set; }
 	}
 }
