@@ -1,4 +1,4 @@
-namespace Paseto.Public
+namespace Paseto.Authentication
 {
     public sealed class ParsedPaseto
     {

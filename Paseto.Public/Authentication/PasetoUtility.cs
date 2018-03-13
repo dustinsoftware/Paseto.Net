@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Paseto.Internal.Chaos.NaCl;
 
-namespace Paseto.Public
+namespace Paseto.Authentication
 {
 	public static class PasetoUtility
 	{
