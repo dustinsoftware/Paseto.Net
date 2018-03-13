@@ -2,37 +2,36 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
+using Paseto.Authentication;
 
 namespace Paseto.Tests
 {
 	// Tests from here https://github.com/paragonie/paseto/blob/master/tests/Version2VectorTest.php
 	public class PasetoTests
 	{
-		private Paseto _paseto;
+		private readonly byte[] _publicKey;
+		private readonly byte[] _privateKey;
 
 		public PasetoTests()
 		{
-			_paseto = new Paseto(new Options
-			{
-				PublicKey = HexToBytes("1eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2"),
-				PrivateKey = HexToBytes("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a3774"),
-			});
+			_publicKey = HexToBytes("1eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2");
+			_privateKey = HexToBytes("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a3774");
 		}
 
 		[Fact]
 		public void PAE()
 		{
-			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PreAuthEncode(new List<byte[]>())));
-			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(Paseto.PreAuthEncode(new[] { Encoding.UTF8.GetBytes("") })));
-			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Encoding.UTF8.GetString(Paseto.PreAuthEncode(new[] { Encoding.UTF8.GetBytes("test") })));
+			Assert.Equal("\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(PasetoUtility.PreAuthEncode(new List<byte[]>())));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", Encoding.UTF8.GetString(PasetoUtility.PreAuthEncode(new[] { Encoding.UTF8.GetBytes("") })));
+			Assert.Equal("\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00test", Encoding.UTF8.GetString(PasetoUtility.PreAuthEncode(new[] { Encoding.UTF8.GetBytes("test") })));
 		}
 
 		[Fact]
 		public void RoundTrip()
 		{
 			const string payload = "Frank Denis rocks";
-			string signature = _paseto.Sign(payload);
-			Assert.Equal(payload, _paseto.Parse(signature).Payload);
+			string signature = PasetoUtility.Sign(_publicKey, _privateKey, payload);
+			Assert.Equal(payload, PasetoUtility.Parse(_publicKey, signature).Payload);
 		}
 
 		[Theory]
@@ -41,9 +40,11 @@ namespace Paseto.Tests
 		[InlineData("v2.public.RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM", "Frank Denis rocks")]
 		public void Parse(string message, string payload, string footer = "")
 		{
-			var parsed = _paseto.Parse(message);
+			var parsed = PasetoUtility.Parse(_publicKey, message);
 			Assert.Equal(payload, parsed.Payload);
 			Assert.Equal(footer, parsed.Footer);
+
+			Assert.Null(PasetoUtility.Parse(new byte[32], message));
 		}
 
 		[Fact]

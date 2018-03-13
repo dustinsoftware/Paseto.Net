@@ -2,39 +2,44 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using NSec.Cryptography;
+using Paseto.Internal.Chaos.NaCl;
 
-namespace Paseto
+namespace Paseto.Authentication
 {
-	public sealed class Paseto
+	public static class PasetoUtility
 	{
-		public Paseto(Options options)
+		public static string Sign(byte[] publicKey, byte[] privateKey, string payload, string footer = "")
 		{
-			_options = options;
-		}
-
-		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
-		public string Sign(string payload, string footer = "")
-		{
-			if (payload == null) throw new ArgumentNullException(nameof(payload));
-			if (footer == null) throw new ArgumentNullException(nameof(footer));
+			if (publicKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
+			if (privateKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
+			if (payload == null)
+				throw new ArgumentNullException(nameof(payload));
+			if (footer == null)
+				throw new ArgumentNullException(nameof(footer));
 
 			string header = "v2.public.";
 
 			byte[] m2 = PreAuthEncode(new[] { header, payload, footer }.Select(Encoding.UTF8.GetBytes).ToArray());
 
-			var encryptAlgorithm = new Ed25519();
-			using (var key = Key.Import(encryptAlgorithm, _options.PrivateKey, KeyBlobFormat.RawPrivateKey))
-			{
-				string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
-				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, m2)))}{footerToAppend}";
-			}
+			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
+
+			byte[] signature = Ed25519.Sign(m2, privateKey.Concat(publicKey).ToArray());
+
+			string createdPaseto = $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
+
+			Assert(Parse(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
+			return createdPaseto;
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
-		public ParsedPaseto Parse(string signedMessage)
+		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
 		{
-			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
+			if (signedMessage == null)
+				throw new ArgumentNullException(signedMessage);
+			if (publicKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
 
 			const string header = "v2.public.";
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");
@@ -48,10 +53,8 @@ namespace Paseto
 
 			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, footer });
 
-			var encryptAlgorithm = new Ed25519();
-
-			var publicKey = PublicKey.Import(encryptAlgorithm, _options.PublicKey, KeyBlobFormat.RawPublicKey);
-			encryptAlgorithm.Verify(publicKey, m2, signature);
+			if (!Ed25519.Verify(signature, m2, publicKey))
+				return null;
 
 			return new ParsedPaseto
 			{
@@ -60,9 +63,10 @@ namespace Paseto
 			};
 		}
 
-		public void Assert(bool condition, string reason)
+		public static void Assert(bool condition, string reason)
 		{
-			if (!condition) throw new FormatException("The format of the message or signature was invalid. " + reason);
+			if (!condition)
+				throw new FormatException("The format of the message or signature was invalid. " + reason);
 		}
 
 		// https://github.com/paragonie/paseto/blob/785723a02bc27e0e90821b0852d9e86573bbe63d/docs/01-Protocol-Versions/Common.md#authentication-padding
@@ -82,19 +86,5 @@ namespace Paseto
 			Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
 			.Replace('-', '+')
 			.Replace('_', '/'));
-
-		private Options _options;
-	}
-
-	public sealed class Options
-	{
-		public byte[] PublicKey { get; set; }
-		public byte[] PrivateKey { get; set; }
-	}
-
-	public sealed class ParsedPaseto
-	{
-		public string Payload { get; set; }
-		public string Footer { get; set; }
 	}
 }
