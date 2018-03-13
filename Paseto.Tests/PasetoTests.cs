@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using NSec.Cryptography;
 using Xunit;
 
 namespace Paseto.Tests
@@ -16,6 +18,7 @@ namespace Paseto.Tests
 			{
 				PublicKey = HexToBytes("1eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2"),
 				PrivateKey = HexToBytes("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a3774"),
+				SymmetricKey = HexToBytes("707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f"),
 			});
 		}
 
@@ -28,11 +31,19 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
-		public void RoundTrip()
+		public void RoundTripPublic()
 		{
 			const string payload = "Frank Denis rocks";
 			string signature = _paseto.Sign(payload);
 			Assert.Equal(payload, _paseto.Parse(signature).Payload);
+		}
+
+		[Fact]
+		public void RoundTripPrivate()
+		{
+			const string payload = "Love is stronger than hate or fear";
+			string encrypted = _paseto.Encrypt(payload, nonce: new byte[24]);
+			Assert.Equal(payload, _paseto.Decrypt(encrypted));
 		}
 
 		[Theory]
@@ -44,6 +55,25 @@ namespace Paseto.Tests
 			var parsed = _paseto.Parse(message);
 			Assert.Equal(payload, parsed.Payload);
 			Assert.Equal(footer, parsed.Footer);
+		}
+
+		[Theory]
+		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNUtKpdy5KXjKfpSKrOlqQvQ")]
+		public void EncryptWithNullKey(string payload, string message)
+		{
+			var paseto = new Paseto(new Options { SymmetricKey = new byte[32] });
+			var nonce = new byte[24];
+			Assert.Equal(message, paseto.Encrypt(payload, nonce: nonce));
+		}
+
+		[Theory]
+		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNkIWACdHuLiJiW16f2GuGYA")]
+		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNreCcZAS0iGVlzdHjTf2ilg.Q3VvbiBBbHBpbnVz", "Cuon Alpinus")]
+		[InlineData("Love is stronger than hate or fear", "v2.local.BEsKs5AolRYDb_O-bO-lwHWUextpShFSXlvv8MsrNZs3vTSnGQG4qRM9ezDl880jFwknSA6JARj2qKhDHnlSHx1GSCizfcF019U")]
+		public void Encrypt(string payload, string message, string footer = "")
+		{
+			var nonce = new byte[24];
+			Assert.Equal(message, _paseto.Encrypt(payload, footer, nonce));
 		}
 
 		[Fact]

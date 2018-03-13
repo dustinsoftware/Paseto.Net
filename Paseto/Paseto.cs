@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using NSec.Cryptography;
 
@@ -11,6 +12,64 @@ namespace Paseto
 		public Paseto(Options options)
 		{
 			_options = options;
+		}
+
+		// https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Version2.md#encrypt
+		public string Encrypt(string payload, string footer = "", byte[] nonce = null)
+		{
+			if (payload == null) throw new ArgumentNullException(nameof(payload));
+
+			string header = "v2.local.";
+
+			if (nonce == null)
+			{
+				nonce = new byte[24];
+				using (var random = new RNGCryptoServiceProvider())
+					random.GetBytes(nonce);
+			}
+
+			byte[] macBytes;
+			var macAlgorithm = new Blake2bMac();
+			using (var key = Key.Import(macAlgorithm, nonce, KeyBlobFormat.RawSymmetricKey))
+			{
+				macBytes = macAlgorithm.Mac(key, Encoding.UTF8.GetBytes(payload), 24);
+			}
+
+			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), macBytes, Encoding.UTF8.GetBytes(footer) });
+			var encryptAlgorithm = new XChaCha20Poly1305();
+			byte[] encryptedPayload;
+			using (var key = Key.Import(encryptAlgorithm, _options.SymmetricKey, KeyBlobFormat.RawSymmetricKey))
+			{
+				encryptedPayload = encryptAlgorithm.Encrypt(key, new Nonce(macBytes, 0), preAuth, Encoding.UTF8.GetBytes(payload));
+			}
+
+			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
+			return $"{header}{ToBase64Url(macBytes.Concat(encryptedPayload))}{footerToAppend}";
+		}
+
+		public string Decrypt(string signedMessage)
+		{
+			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
+
+			const string header = "v2.local.";
+			Assert(signedMessage.StartsWith(header), "Token did not start with v2.local.");
+
+			var tokenParts = signedMessage.Split('.');
+			byte[] footer = FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : "");
+
+			var bytes = FromBase64Url(tokenParts[2]);
+			Assert(bytes.Length >= 24, "Token was less than 24 bytes long");
+			byte[] nonceBytes = bytes.Take(24).ToArray();
+			byte[] payload = bytes.Skip(24).ToArray();
+
+			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, footer });
+
+			var encryptAlgorithm = new XChaCha20Poly1305();
+
+			using (var key = Key.Import(encryptAlgorithm, _options.SymmetricKey, KeyBlobFormat.RawSymmetricKey))
+			{
+				return Encoding.UTF8.GetString(encryptAlgorithm.Decrypt(key, new Nonce(nonceBytes, 0), preAuth, payload));
+			}
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
@@ -90,6 +149,7 @@ namespace Paseto
 	{
 		public byte[] PublicKey { get; set; }
 		public byte[] PrivateKey { get; set; }
+		public byte[] SymmetricKey { get; set; }
 	}
 
 	public sealed class ParsedPaseto
