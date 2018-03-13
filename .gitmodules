@@ -1,0 +1,3 @@
+[submodule "ext/Chaos.NaCl"]
+	path = ext/Chaos.NaCl
+	url = https://github.com/dustinsoftware/Chaos.NaCl

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using NSec.Cryptography;
+using Paseto.Internal.Chaos.NaCl;
 
 namespace Paseto
 {
@@ -23,12 +23,11 @@ namespace Paseto
 
 			byte[] m2 = PreAuthEncode(new[] { header, payload, footer }.Select(Encoding.UTF8.GetBytes).ToArray());
 
-			var encryptAlgorithm = new Ed25519();
-			using (var key = Key.Import(encryptAlgorithm, _options.PrivateKey, KeyBlobFormat.RawPrivateKey))
-			{
-				string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
-				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, m2)))}{footerToAppend}";
-			}
+			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
+
+			byte[] signature = Ed25519.Sign(m2, _options.PrivateKey);
+
+			return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
@@ -48,10 +47,8 @@ namespace Paseto
 
 			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, footer });
 
-			var encryptAlgorithm = new Ed25519();
-
-			var publicKey = PublicKey.Import(encryptAlgorithm, _options.PublicKey, KeyBlobFormat.RawPublicKey);
-			encryptAlgorithm.Verify(publicKey, m2, signature);
+			if (!Ed25519.Verify(signature, m2, _options.PublicKey))
+				return null;
 
 			return new ParsedPaseto
 			{

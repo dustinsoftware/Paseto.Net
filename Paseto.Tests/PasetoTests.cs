@@ -15,7 +15,7 @@ namespace Paseto.Tests
 			_paseto = new Paseto(new Options
 			{
 				PublicKey = HexToBytes("1eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2"),
-				PrivateKey = HexToBytes("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a3774"),
+				PrivateKey = HexToBytes("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a37741eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2"),
 			});
 		}
 
@@ -44,6 +44,9 @@ namespace Paseto.Tests
 			var parsed = _paseto.Parse(message);
 			Assert.Equal(payload, parsed.Payload);
 			Assert.Equal(footer, parsed.Footer);
+
+			var nullPublicKeyInstance = new Paseto(new Options { PublicKey = new byte[32] });
+			Assert.Null(nullPublicKeyInstance.Parse(message));
 		}
 
 		[Fact]
