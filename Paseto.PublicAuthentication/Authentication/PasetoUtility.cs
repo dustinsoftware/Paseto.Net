@@ -10,8 +10,10 @@ namespace Paseto.PublicAuthentication
 	{
 		public static string Sign(byte[] privateKey, string payload, string footer = "")
 		{
-			if (payload == null) throw new ArgumentNullException(nameof(payload));
-			if (footer == null) throw new ArgumentNullException(nameof(footer));
+			if (payload == null)
+				throw new ArgumentNullException(nameof(payload));
+			if (footer == null)
+				throw new ArgumentNullException(nameof(footer));
 
 			string header = "v2.public.";
 
@@ -27,7 +29,8 @@ namespace Paseto.PublicAuthentication
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
 		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
 		{
-			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
+			if (signedMessage == null)
+				throw new ArgumentNullException(signedMessage);
 
 			const string header = "v2.public.";
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");
@@ -53,7 +56,8 @@ namespace Paseto.PublicAuthentication
 
 		public static void Assert(bool condition, string reason)
 		{
-			if (!condition) throw new FormatException("The format of the message or signature was invalid. " + reason);
+			if (!condition)
+				throw new FormatException("The format of the message or signature was invalid. " + reason);
 		}
 
 		// https://github.com/paragonie/paseto/blob/785723a02bc27e0e90821b0852d9e86573bbe63d/docs/01-Protocol-Versions/Common.md#authentication-padding
