@@ -9,8 +9,12 @@ namespace Paseto.Authentication
 	public static class PasetoUtility
 	{
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
-		public static string Sign(byte[] privateKey, string payload, string footer = "")
+		public static string Sign(byte[] publicKey, byte[] privateKey, string payload, string footer = "")
 		{
+			if (publicKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
+			if (privateKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
 			if (payload == null)
 				throw new ArgumentNullException(nameof(payload));
 			if (footer == null)
@@ -21,10 +25,13 @@ namespace Paseto.Authentication
 			byte[] m2 = PreAuthEncode(new[] { header, payload, footer }.Select(Encoding.UTF8.GetBytes).ToArray());
 
 			var encryptAlgorithm = new Ed25519();
-			using (var key = Key.Import(encryptAlgorithm, privateKey, KeyBlobFormat.RawPrivateKey))
+			using (var key = Key.Import(encryptAlgorithm, privateKey.Take(32).ToArray(), KeyBlobFormat.RawPrivateKey))
 			{
 				string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
-				return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, m2)))}{footerToAppend}";
+				string createdPaseto = $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, m2)))}{footerToAppend}";
+
+				Assert(Parse(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
+				return createdPaseto;
 			}
 		}
 
@@ -33,6 +40,8 @@ namespace Paseto.Authentication
 		{
 			if (signedMessage == null)
 				throw new ArgumentNullException(signedMessage);
+			if (publicKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
 
 			const string header = "v2.public.";
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");
@@ -49,7 +58,15 @@ namespace Paseto.Authentication
 			var encryptAlgorithm = new Ed25519();
 
 			var publicKeyInstance = PublicKey.Import(encryptAlgorithm, publicKey, KeyBlobFormat.RawPublicKey);
-			encryptAlgorithm.Verify(publicKeyInstance, m2, signature);
+
+			try
+			{
+				encryptAlgorithm.Verify(publicKeyInstance, m2, signature);
+			}
+			catch (CryptographicException)
+			{
+				return null;
+			}
 
 			return new ParsedPaseto
 			{

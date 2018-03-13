@@ -4,12 +4,16 @@ using System.Linq;
 using System.Text;
 using Paseto.Internal.Chaos.NaCl;
 
-namespace Paseto.PublicAuthentication
+namespace Paseto.Public
 {
 	public static class PasetoUtility
 	{
-		public static string Sign(byte[] privateKey, string payload, string footer = "")
+		public static string Sign(byte[] publicKey, byte[] privateKey, string payload, string footer = "")
 		{
+			if (publicKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
+			if (privateKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
 			if (payload == null)
 				throw new ArgumentNullException(nameof(payload));
 			if (footer == null)
@@ -21,9 +25,12 @@ namespace Paseto.PublicAuthentication
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 
-			byte[] signature = Ed25519.Sign(m2, privateKey);
+			byte[] signature = Ed25519.Sign(m2, privateKey.Concat(publicKey).ToArray());
 
-			return $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
+			string createdPaseto = $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
+
+			Assert(Parse(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
+			return createdPaseto;
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
@@ -31,6 +38,8 @@ namespace Paseto.PublicAuthentication
 		{
 			if (signedMessage == null)
 				throw new ArgumentNullException(signedMessage);
+			if (publicKey?.Length != 32)
+				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
 
 			const string header = "v2.public.";
 			Assert(signedMessage.StartsWith(header), "Token did not start with v2.public.");

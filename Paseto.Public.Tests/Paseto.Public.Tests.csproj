@@ -14,7 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Paseto.PublicAuthentication\Paseto.PublicAuthentication.csproj" />
+    <ProjectReference Include="..\Paseto.Public\Paseto.Public.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Paseto.Tests\**\*.cs" />
   </ItemGroup>
 
 </Project>

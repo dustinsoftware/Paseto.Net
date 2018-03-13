@@ -6,8 +6,8 @@
     <Description>An implementation of PASETO (Platform-Agnostic Security Tokens). This library has no native dependencies, and only supports public authentication with Ed25519.</Description>
     <Copyright>Copyright 2017 Dustin Masters</Copyright>
     <Authors>Dustin Masters</Authors>
-    <AssemblyName>Paseto</AssemblyName>
-    <PackageId>Paseto</PackageId>
+    <AssemblyName>Paseto.Public</AssemblyName>
+    <PackageId>Paseto.Public</PackageId>
     <PackageTags>paseto;netcore</PackageTags>
     <Version>0.0.1</Version>
     <PackageLicenseURL>https://opensource.org/licenses/MIT</PackageLicenseURL>

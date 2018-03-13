@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paseto", "Paseto\Paseto.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paseto.Tests", "Paseto.Tests\Paseto.Tests.csproj", "{AD714AF1-4EB9-45B0-9C8B-25615B4F70B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paseto.PublicAuthentication", "Paseto.PublicAuthentication\Paseto.PublicAuthentication.csproj", "{2FD798CB-3ACA-4BAD-8AA6-D39EDADEC628}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paseto.Public", "Paseto.Public\Paseto.Public.csproj", "{2FD798CB-3ACA-4BAD-8AA6-D39EDADEC628}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
