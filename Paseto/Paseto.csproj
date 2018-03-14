@@ -9,7 +9,7 @@
     <AssemblyName>Paseto</AssemblyName>
     <PackageId>Paseto</PackageId>
     <PackageTags>paseto;netcore</PackageTags>
-    <Version>0.0.1</Version>
+    <Version>0.0.2</Version>
     <PackageLicenseURL>https://opensource.org/licenses/MIT</PackageLicenseURL>
   </PropertyGroup>
 
