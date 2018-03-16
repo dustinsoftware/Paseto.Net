@@ -13,18 +13,18 @@ For more information about the standard: https://github.com/paragonie/paseto
 * v2 local authentication (in [this PR](https://github.com/dustinsoftware/Paseto.Net/pulls))
 * No dependency on JSON.NET (you need to structure the tokens yourself)
 
+### Non-goals:
+* This library doesn't support v1 handling tokens. Per the [spec](https://github.com/paragonie/paseto/tree/9532a73d0db04d083681a859ec232d1d7ddfa5dd/docs/01-Protocol-Versions) v1 tokens should only be used on systems that can't support modern cryptography.
+
 ### Credits:
 Some cryptography utilies are included from https://github.com/CodesInChaos/Chaos.NaCl
 
-### Supports only v2 public tokens
-```
-Install-Package Paseto.Public
-```
-
-### Will support both public and local v2 tokens (only public at the time of writing, based on libsodium)
+### Installation
 ```
 Install-Package Paseto
 ```
+
+> **Note**: If you need a managed-only implementation that does not use libsodium, install `Paseto.Public`, which only supports handling public tokens. If I can find a managed only implementation of XChaCha20-Poly1305, I'll update the main package to reference it.
 
 ### Usage
 ```
