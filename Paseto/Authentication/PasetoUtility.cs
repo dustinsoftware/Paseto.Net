@@ -1,14 +1,59 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
-using NSec.Cryptography;
+using Sodium;
 
 namespace Paseto.Authentication
 {
 	public static class PasetoUtility
 	{
-		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#sign
+		// https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Version2.md#encrypt
+		public static string Encrypt(byte[] symmetricKey, string payload, string footer = "", byte[] nonce = null)
+		{
+			if (payload == null) throw new ArgumentNullException(nameof(payload));
+
+			string header = "v2.local.";
+
+			if (nonce == null)
+			{
+				nonce = new byte[24];
+				using (var random = new RNGCryptoServiceProvider())
+					random.GetBytes(nonce);
+			}
+
+			var hashAlgorithm = new GenericHash.GenericHashAlgorithm(nonce, 24);
+			byte[] macBytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(payload));
+
+			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), macBytes, Encoding.UTF8.GetBytes(footer) });
+
+			byte[] encryptedPayload = SecretAead.Encrypt(Encoding.UTF8.GetBytes(payload), macBytes, symmetricKey, preAuth, useXChaCha: true);
+
+			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
+			return $"{header}{ToBase64Url(macBytes.Concat(encryptedPayload))}{footerToAppend}";
+		}
+
+		public static string Decrypt(byte[] symmetricKey, string signedMessage)
+		{
+			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
+
+			const string header = "v2.local.";
+			Assert(signedMessage.StartsWith(header), "Token did not start with v2.local.");
+
+			var tokenParts = signedMessage.Split('.');
+			byte[] footer = FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : "");
+
+			var bytes = FromBase64Url(tokenParts[2]);
+			Assert(bytes.Length >= 24, "Token was less than 24 bytes long");
+			byte[] nonceBytes = bytes.Take(24).ToArray();
+			byte[] payload = bytes.Skip(24).ToArray();
+
+			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, footer });
+
+			return Encoding.UTF8.GetString(SecretAead.Decrypt(payload, nonceBytes, symmetricKey, preAuth, useXChaCha: true));
+		}
+
 		public static string Sign(byte[] publicKey, byte[] privateKey, string payload, string footer = "")
 		{
 			if (publicKey?.Length != 32)
@@ -24,15 +69,14 @@ namespace Paseto.Authentication
 
 			byte[] m2 = PreAuthEncode(new[] { header, payload, footer }.Select(Encoding.UTF8.GetBytes).ToArray());
 
-			var encryptAlgorithm = new Ed25519();
-			using (var key = Key.Import(encryptAlgorithm, privateKey.Take(32).ToArray(), KeyBlobFormat.RawPrivateKey))
-			{
-				string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
-				string createdPaseto = $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(encryptAlgorithm.Sign(key, m2)))}{footerToAppend}";
+			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 
-				Assert(Parse(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
-				return createdPaseto;
-			}
+			byte[] signature = PublicKeyAuth.SignDetached(m2, privateKey.Concat(publicKey).ToArray());
+
+			string createdPaseto = $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
+
+			Assert(Parse(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
+			return createdPaseto;
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
@@ -55,18 +99,8 @@ namespace Paseto.Authentication
 
 			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, footer });
 
-			var encryptAlgorithm = new Ed25519();
-
-			var publicKeyInstance = PublicKey.Import(encryptAlgorithm, publicKey, KeyBlobFormat.RawPublicKey);
-
-			try
-			{
-				encryptAlgorithm.Verify(publicKeyInstance, m2, signature);
-			}
-			catch (CryptographicException)
-			{
+			if (!PublicKeyAuth.VerifyDetached(signature, m2, publicKey))
 				return null;
-			}
 
 			return new ParsedPaseto
 			{
