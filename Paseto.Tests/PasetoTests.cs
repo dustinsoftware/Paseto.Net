@@ -36,31 +36,6 @@ namespace Paseto.Tests
 			Assert.Equal(payload, PasetoUtility.Parse(_publicKey, signature).Payload);
 		}
 
-		[Fact]
-		public void RoundTripPrivate()
-		{
-			const string payload = "Love is stronger than hate or fear";
-			string encrypted = PasetoUtility.Encrypt(_symmetricKey, payload, nonce: new byte[24]);
-			Assert.Equal(payload, PasetoUtility.Decrypt(_symmetricKey, encrypted));
-		}
-
-		[Theory]
-		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNUtKpdy5KXjKfpSKrOlqQvQ")]
-		public void EncryptWithNullKey(string payload, string message)
-		{
-			Assert.Equal(message, PasetoUtility.Encrypt(new byte[32], payload, nonce: new byte[24]));
-		}
-
-		[Theory]
-		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNkIWACdHuLiJiW16f2GuGYA")]
-		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNreCcZAS0iGVlzdHjTf2ilg.Q3VvbiBBbHBpbnVz", "Cuon Alpinus")]
-		[InlineData("Love is stronger than hate or fear", "v2.local.BEsKs5AolRYDb_O-bO-lwHWUextpShFSXlvv8MsrNZs3vTSnGQG4qRM9ezDl880jFwknSA6JARj2qKhDHnlSHx1GSCizfcF019U")]
-		public void Encrypt(string payload, string message, string footer = "")
-		{
-			var nonce = new byte[24];
-			Assert.Equal(message, PasetoUtility.Encrypt(_symmetricKey, payload, footer, nonce));
-		}
-
 		[Theory]
 		[InlineData("v2.public.xnHHprS7sEyjP5vWpOvHjAP2f0HER7SWfPuehZ8QIctJRPTrlZLtRCk9_iNdugsrqJoGaO4k9cDBq3TOXu24AA", "")]
 		[InlineData("v2.public.Qf-w0RdU2SDGW_awMwbfC0Alf_nd3ibUdY3HigzU7tn_4MPMYIKAJk_J_yKYltxrGlxEdrWIqyfjW81njtRyDw.Q3VvbiBBbHBpbnVz", "", "Cuon Alpinus")]
