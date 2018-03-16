@@ -5,10 +5,13 @@
 
 For more information about the standard: https://github.com/paragonie/paseto
 
-### Supports:
+### Features:
 * v2 public authentication (based on Ed25519 signatures)
+* v2 local authentication (in [this PR](https://github.com/dustinsoftware/Paseto.Net/pulls))
+* No dependency on JSON.NET
 
-Support exists for local encryption in [this PR](https://github.com/dustinsoftware/Paseto.Net/pulls), but some changes need to land in NSec before that can be merged and shipped to NuGet. You're welcome to build from source if you need local encryption today.
+### Credits:
+Some cryptography utilies are included from https://github.com/CodesInChaos/Chaos.NaCl
 
 ### Supports only v2 public tokens
 ```
