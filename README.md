@@ -28,10 +28,16 @@ Install-Package Paseto
 > **Note**: If you need a managed-only implementation that does not use libsodium, install `Paseto.Public`, which only supports handling public tokens. If I can find a managed only implementation of XChaCha20-Poly1305, I'll update the main package to reference it.
 
 ### Usage
-```
+```csharp
 using Paseto.Authentication;
 
+// v2 public
 const string payload = "Hello Paseto.Net";
 string signature = PasetoUtility.Sign(_publicKey, _privateKey, payload); // v2.public.signature
 Assert.Equal(payload, PasetoUtility.Parse(_publicKey, signature).Payload);
+
+// v2 local
+const string payload = "Love is stronger than hate or fear";
+string encrypted = PasetoUtility.Encrypt(_symmetricKey, payload, nonce);
+Assert.Equal(payload, PasetoUtility.Decrypt(_symmetricKey, encrypted));
 ```
