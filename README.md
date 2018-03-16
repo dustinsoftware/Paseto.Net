@@ -11,7 +11,7 @@ For more information about the standard: https://github.com/paragonie/paseto
 ### Features:
 * v2 public authentication (based on Ed25519 signatures)
 * v2 local authentication (in [this PR](https://github.com/dustinsoftware/Paseto.Net/pulls))
-* No dependency on JSON.NET
+* No dependency on JSON.NET (you need to structure the tokens yourself)
 
 ### Credits:
 Some cryptography utilies are included from https://github.com/CodesInChaos/Chaos.NaCl
