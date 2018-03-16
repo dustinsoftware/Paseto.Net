@@ -2,6 +2,9 @@
 .NET Implementation of PASETO
 
 [![Build status](https://ci.appveyor.com/api/projects/status/q8oefx7i9yix53m9/branch/master?svg=true)](https://ci.appveyor.com/project/dustinsoftware/paseto-net/branch/master)
+[![NuGet](https://img.shields.io/nuget/v/Paseto.svg)](https://www.nuget.org/packages/Paseto/)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/dustinsoftware/paseto.net/issues)
+
 
 For more information about the standard: https://github.com/paragonie/paseto
 
