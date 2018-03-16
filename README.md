@@ -9,15 +9,16 @@
 For more information about the standard: https://github.com/paragonie/paseto
 
 ### Features:
-* v2 public authentication (based on Ed25519 signatures)
-* v2 local authentication (in [this PR](https://github.com/dustinsoftware/Paseto.Net/pulls))
+* v2 public authentication (uses Ed25519 signatures)
+* v2 local authentication (uses XChaCha20-Poly1305 and Blake2b)
 * No dependency on JSON.NET (you need to structure the tokens yourself)
 
 ### Non-goals:
 * This library doesn't support v1 handling tokens. Per the [spec](https://github.com/paragonie/paseto/tree/9532a73d0db04d083681a859ec232d1d7ddfa5dd/docs/01-Protocol-Versions) v1 tokens should only be used on systems that can't support modern cryptography.
 
 ### Credits:
-Some cryptography utilies are included from https://github.com/CodesInChaos/Chaos.NaCl
+- Managed Ed25519 implementation from https://github.com/CodesInChaos/Chaos.NaCl
+- A fork of [libsodium-net](https://github.com/dustinsoftware/libsodium-net/) is used for XChaCha20-Poly1305
 
 ### Installation
 ```
