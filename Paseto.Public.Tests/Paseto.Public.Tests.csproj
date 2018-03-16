@@ -21,4 +21,8 @@
     <Compile Include="..\Paseto.Tests\*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="..\Paseto.Tests\LocalTests.cs" />
+  </ItemGroup>
+
 </Project>

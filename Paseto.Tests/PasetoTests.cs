@@ -11,11 +11,13 @@ namespace Paseto.Tests
 	{
 		private readonly byte[] _publicKey;
 		private readonly byte[] _privateKey;
+		private readonly byte[] _symmetricKey;
 
 		public PasetoTests()
 		{
 			_publicKey = HexToBytes("1eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2");
 			_privateKey = HexToBytes("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a3774");
+			_symmetricKey = HexToBytes("707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f");
 		}
 
 		[Fact]
