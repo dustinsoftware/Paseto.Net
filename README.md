@@ -2,13 +2,14 @@
 .NET Implementation of PASETO
 
 [![Build status](https://ci.appveyor.com/api/projects/status/q8oefx7i9yix53m9/branch/master?svg=true)](https://ci.appveyor.com/project/dustinsoftware/paseto-net/branch/master)
+[![Build Status](https://travis-ci.org/dustinsoftware/Paseto.Net.svg?branch=master)](https://travis-ci.org/dustinsoftware/Paseto.Net)
 [![NuGet](https://img.shields.io/nuget/v/Paseto.svg)](https://www.nuget.org/packages/Paseto/)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/dustinsoftware/paseto.net/issues)
-
 
 For more information about the standard: https://github.com/paragonie/paseto
 
 ### Features:
+* Supports full .NET Framework and .NET Core (Windows / OS X / Linux)
 * v2 public authentication (uses Ed25519 signatures)
 * v2 local authentication (uses XChaCha20-Poly1305 and Blake2b)
 * No dependency on JSON.NET (you need to structure the tokens yourself)
