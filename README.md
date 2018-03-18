@@ -15,7 +15,7 @@ For more information about the standard: https://github.com/paragonie/paseto
 * No dependency on JSON.NET (you need to structure the tokens yourself)
 
 ### Non-goals:
-* This library doesn't support v1 handling tokens. Per the [spec](https://github.com/paragonie/paseto/tree/9532a73d0db04d083681a859ec232d1d7ddfa5dd/docs/01-Protocol-Versions) v1 tokens should only be used on systems that can't support modern cryptography.
+* This library doesn't support v1 tokens. Per the [spec](https://github.com/paragonie/paseto/tree/9532a73d0db04d083681a859ec232d1d7ddfa5dd/docs/01-Protocol-Versions) v1 tokens should only be used on systems that can't support modern cryptography.
 
 ### Credits:
 - Managed Ed25519 implementation from https://github.com/CodesInChaos/Chaos.NaCl
