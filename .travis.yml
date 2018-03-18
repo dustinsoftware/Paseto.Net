@@ -1,0 +1,7 @@
+language: csharp
+mono: none
+dotnet: 2.1.1
+script:
+ - dotnet restore
+ - dotnet test Paseto.Tests
+ - dotnet test Paseto.Public.Tests
