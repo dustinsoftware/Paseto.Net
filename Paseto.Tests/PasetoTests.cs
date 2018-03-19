@@ -32,8 +32,8 @@ namespace Paseto.Tests
 		public void RoundTrip()
 		{
 			const string payload = "Frank Denis rocks";
-			string signature = PasetoUtility.Sign(_publicKey, _privateKey, payload);
-			Assert.Equal(payload, PasetoUtility.Parse(_publicKey, signature).Payload);
+			string signature = PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes(payload));
+			Assert.Equal(payload, Encoding.UTF8.GetString(PasetoUtility.ParseBytes(_publicKey, signature).Payload));
 		}
 
 		[Theory]
@@ -42,9 +42,9 @@ namespace Paseto.Tests
 		[InlineData("v2.public.RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM", "Frank Denis rocks")]
 		public void Parse(string message, string payload, string footer = "")
 		{
-			var parsed = PasetoUtility.Parse(_publicKey, message);
-			Assert.Equal(payload, parsed.Payload);
-			Assert.Equal(footer, parsed.Footer);
+			var parsed = PasetoUtility.ParseBytes(_publicKey, message);
+			Assert.Equal(payload, Encoding.UTF8.GetString(parsed.Payload));
+			Assert.Equal(footer, Encoding.UTF8.GetString(parsed.Footer));
 
 			Assert.Null(PasetoUtility.Parse(new byte[32], message));
 		}
@@ -60,12 +60,12 @@ namespace Paseto.Tests
 			};
 
 			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
-			var parsedToken = PasetoUtility.ParseJson(_publicKey, token);
+			var parsedToken = PasetoUtility.Parse(_publicKey, token);
 
-			Assert.Equal(testClaims["iss"], parsedToken["iss"]);
-			Assert.Equal(testClaims["exp"], parsedToken["exp"]);
-			Assert.Equal(testClaims["sub"], parsedToken["sub"]);
-			Assert.Equal(testClaims["roles"], parsedToken["roles"]);
+			Assert.Equal(testClaims["iss"], parsedToken.Payload["iss"]);
+			Assert.Equal(testClaims["exp"], parsedToken.Payload["exp"]);
+			Assert.Equal(testClaims["sub"], parsedToken.Payload["sub"]);
+			Assert.Equal(testClaims["roles"], parsedToken.Payload["roles"]);
 		}
 
 		[Fact]

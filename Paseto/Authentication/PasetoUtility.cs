@@ -55,7 +55,7 @@ namespace Paseto.Authentication
 			return Encoding.UTF8.GetString(SecretAead.Decrypt(payload, nonceBytes, symmetricKey, preAuth, useXChaCha: true));
 		}
 
-		public static string Sign(byte[] publicKey, byte[] privateKey, string payload, string footer = "")
+		public static string SignBytes(byte[] publicKey, byte[] privateKey, byte[] payload, string footer = "")
 		{
 			if (publicKey?.Length != 32)
 				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
@@ -68,25 +68,25 @@ namespace Paseto.Authentication
 
 			string header = "v2.public.";
 
-			byte[] m2 = PreAuthEncode(new[] { header, payload, footer }.Select(Encoding.UTF8.GetBytes).ToArray());
+			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, Encoding.UTF8.GetBytes(footer) }.ToArray());
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 
 			byte[] signature = PublicKeyAuth.SignDetached(m2, privateKey.Concat(publicKey).ToArray());
 
-			string createdPaseto = $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
+			string createdPaseto = $"{header}{ToBase64Url(payload.Concat(signature))}{footerToAppend}";
 
-			Assert(Parse(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
+			Assert(ParseBytes(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
 			return createdPaseto;
 		}
 
 		public static string Sign(byte[] publicKey, byte[] privateKey, IDictionary<string, object> claims, string footer = "")
 		{
-			return Sign(publicKey, privateKey, SimpleJson.SerializeObject(claims), footer);
+			return SignBytes(publicKey, privateKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(claims)), footer);
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
-		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
+		public static ParsedPasetoBytes ParseBytes(byte[] publicKey, string signedMessage)
 		{
 			if (signedMessage == null)
 				throw new ArgumentNullException(signedMessage);
@@ -108,18 +108,31 @@ namespace Paseto.Authentication
 			if (!PublicKeyAuth.VerifyDetached(signature, m2, publicKey))
 				return null;
 
-			return new ParsedPaseto
+			return new ParsedPasetoBytes
 			{
-				Payload = Encoding.UTF8.GetString(payload),
-				Footer = Encoding.UTF8.GetString(footer),
+				Payload = payload,
+				Footer = footer,
 			};
 		}
 
-		public static IDictionary<string, object> ParseJson(byte[] publicKey, string signedMessage)
+		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
 		{
-			var result = Parse(publicKey, signedMessage);
-			var jsonResult = SimpleJson.DeserializeObject(result.Payload);
-			return jsonResult as IDictionary<string, object>;
+			var result = ParseBytes(publicKey, signedMessage);
+			if (result == null)
+				return null;
+
+			var payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload));
+			if (!(payloadJson is IDictionary<string, object>))
+				return null;
+
+			string footerString = Encoding.UTF8.GetString(result.Footer);
+			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString);
+
+			return new ParsedPaseto
+			{
+				Payload = payloadJson as IDictionary<string, object>,
+				Footer = footerJson as IDictionary<string, object>,
+			};
 		}
 
 		public static void Assert(bool condition, string reason)
