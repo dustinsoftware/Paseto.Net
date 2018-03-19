@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Paseto.Internal.Chaos.NaCl;
+using Paseto.Internal.SimpleJson;
 
 namespace Paseto.Authentication
 {
@@ -33,6 +34,11 @@ namespace Paseto.Authentication
 			return createdPaseto;
 		}
 
+		public static string Sign(byte[] publicKey, byte[] privateKey, IDictionary<string, object> claims, string footer = "")
+		{
+			return Sign(publicKey, privateKey, SimpleJson.SerializeObject(claims), footer);
+		}
+
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
 		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
 		{
@@ -61,6 +67,13 @@ namespace Paseto.Authentication
 				Payload = Encoding.UTF8.GetString(payload),
 				Footer = Encoding.UTF8.GetString(footer),
 			};
+		}
+
+		public static IDictionary<string, object> ParseJson(byte[] publicKey, string signedMessage)
+		{
+			var result = Parse(publicKey, signedMessage);
+			var jsonResult = SimpleJson.DeserializeObject(result.Payload);
+			return jsonResult as IDictionary<string, object>;
 		}
 
 		public static void Assert(bool condition, string reason)

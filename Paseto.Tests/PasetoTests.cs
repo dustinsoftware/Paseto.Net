@@ -50,6 +50,25 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
+		public void JsonDataRoundTrip()
+		{
+			var testClaims = new Dictionary<string, object>{
+				["iss"] = "http://auth.example.com",
+				["exp"] = DateTime.UtcNow.AddMinutes(10).ToString("o"),
+				["sub"] = (long) 2986689,
+				["roles"] = new[] {"Admin", "User"}
+			};
+
+			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
+			var parsedToken = PasetoUtility.ParseJson(_publicKey, token);
+
+			Assert.Equal(testClaims["iss"], parsedToken["iss"]);
+			Assert.Equal(testClaims["exp"], parsedToken["exp"]);
+			Assert.Equal(testClaims["sub"], parsedToken["sub"]);
+			Assert.Equal(testClaims["roles"], parsedToken["roles"]);
+		}
+
+		[Fact]
 		public void HexString()
 		{
 			Assert.Equal("Hello world", Encoding.UTF8.GetString(HexToBytes("48656C6C6F20776F726C64")));
