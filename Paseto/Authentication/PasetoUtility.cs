@@ -4,7 +4,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Paseto.Internal.SimpleJson;
-using Sodium;
 
 namespace Paseto.Authentication
 {
@@ -17,24 +16,15 @@ namespace Paseto.Authentication
 
 			string header = "v2.local.";
 
-			if (nonce == null)
-			{
-				nonce = new byte[24];
-				using (var random = new RNGCryptoServiceProvider())
-					random.GetBytes(nonce);
-			}
-
-			var hashAlgorithm = new GenericHash.GenericHashAlgorithm(nonce, 24);
-			byte[] macBytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(payload));
+			byte[] macBytes = Algorithm.Hash(Encoding.UTF8.GetBytes(payload), nonce);
 
 			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), macBytes, Encoding.UTF8.GetBytes(footer) });
 
-			byte[] encryptedPayload = SecretAead.Encrypt(Encoding.UTF8.GetBytes(payload), macBytes, symmetricKey, preAuth, useXChaCha: true);
+			byte[] encryptedPayload = Algorithm.Encrypt(Encoding.UTF8.GetBytes(payload), macBytes, symmetricKey, preAuth);
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 			return $"{header}{ToBase64Url(macBytes.Concat(encryptedPayload))}{footerToAppend}";
 		}
-
 		public static string Decrypt(byte[] symmetricKey, string signedMessage)
 		{
 			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
@@ -52,7 +42,7 @@ namespace Paseto.Authentication
 
 			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, footer });
 
-			return Encoding.UTF8.GetString(SecretAead.Decrypt(payload, nonceBytes, symmetricKey, preAuth, useXChaCha: true));
+			return Encoding.UTF8.GetString(Algorithm.Decrypt(payload, nonceBytes, symmetricKey, preAuth));
 		}
 
 		public static string SignBytes(byte[] publicKey, byte[] privateKey, byte[] payload, string footer = "")
@@ -72,7 +62,7 @@ namespace Paseto.Authentication
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 
-			byte[] signature = PublicKeyAuth.SignDetached(m2, privateKey.Concat(publicKey).ToArray());
+			byte[] signature = Algorithm.Sign(m2, privateKey.Concat(publicKey).ToArray());
 
 			string createdPaseto = $"{header}{ToBase64Url(payload.Concat(signature))}{footerToAppend}";
 
@@ -105,7 +95,7 @@ namespace Paseto.Authentication
 
 			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, footer });
 
-			if (!PublicKeyAuth.VerifyDetached(signature, m2, publicKey))
+			if (!Algorithm.Verify(signature, m2, publicKey))
 				return null;
 
 			return new ParsedPasetoBytes
