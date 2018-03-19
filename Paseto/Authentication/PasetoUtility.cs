@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -105,15 +106,26 @@ namespace Paseto.Authentication
 			};
 		}
 
-		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
+		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage, bool validateExpiration = true)
 		{
 			var result = ParseBytes(publicKey, signedMessage);
 			if (result == null)
 				return null;
 
-			var payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload));
-			if (!(payloadJson is IDictionary<string, object>))
+			var payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload)) as IDictionary<string, object>;
+			if (payloadJson == null)
 				return null;
+
+			payloadJson.TryGetValue("exp", out var expirationString);
+
+			if (expirationString != null)
+			{
+				if (!DateTime.TryParseExact((string) expirationString, "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedExpirationDate))
+					throw new FormatException("exp was not in ISO 8601 format");
+
+				if (parsedExpirationDate < DateTime.UtcNow)
+					return null;
+			}
 
 			string footerString = Encoding.UTF8.GetString(result.Footer);
 			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString);

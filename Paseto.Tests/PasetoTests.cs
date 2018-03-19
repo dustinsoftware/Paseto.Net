@@ -54,7 +54,7 @@ namespace Paseto.Tests
 		{
 			var testClaims = new Dictionary<string, object>{
 				["iss"] = "http://auth.example.com",
-				["exp"] = DateTime.UtcNow.AddMinutes(10).ToString("o"),
+				["exp"] = DateTime.UtcNow.AddMinutes(10).ToString(Iso8601Format),
 				["sub"] = (long) 2986689,
 				["roles"] = new[] {"Admin", "User"}
 			};
@@ -69,12 +69,24 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
+		public void ExpiredTokenDoesNotParse()
+		{
+			var testClaims = new Dictionary<string, object>{
+				["exp"] = DateTime.UtcNow.AddSeconds(-1).ToString(Iso8601Format),
+				["sub"] = (long) 2986689,
+			};
+
+			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
+			Assert.Null(PasetoUtility.Parse(_publicKey, token));
+		}
+
+		[Fact]
 		public void HexString()
 		{
 			Assert.Equal("Hello world", Encoding.UTF8.GetString(HexToBytes("48656C6C6F20776F726C64")));
 		}
 
-		public static byte[] HexToBytes(string hexString)
+		private static byte[] HexToBytes(string hexString)
 		{
 			var bytes = new byte[hexString.Length / 2];
 			for (int i = 0; i < bytes.Length; i++)
@@ -84,5 +96,7 @@ namespace Paseto.Tests
 
 			return bytes;
 		}
+
+		private const string Iso8601Format = "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz";
 	}
 }
