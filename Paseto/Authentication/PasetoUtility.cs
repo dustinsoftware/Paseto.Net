@@ -113,28 +113,28 @@ namespace Paseto.Authentication
 			if (result == null)
 				return null;
 
-            IDictionary<string, object> payloadJson;
-            try
-            {
-                payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload)) as IDictionary<string, object>;
-                if (payloadJson == null)
-                    return null;
-            }
-            catch (SerializationException e)
-            {
-                throw new PasetoFormatException("Serialization error. " + e);
-            }
+			IDictionary<string, object> payloadJson;
+			try
+			{
+				payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload)) as IDictionary<string, object>;
+				if (payloadJson == null)
+					return null;
+			}
+			catch (SerializationException e)
+			{
+				throw new PasetoFormatException("Serialization error. " + e);
+			}
 
 			string footerString = Encoding.UTF8.GetString(result.Footer);
 			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString) as IDictionary<string, object>;
 
-            var pasetoInstance = new PasteoInstance(payloadJson) { Footer = footerJson };
+			var pasetoInstance = new PasteoInstance(payloadJson) { Footer = footerJson };
 
-            if (pasetoInstance.Expiration != null && pasetoInstance.Expiration.Value < DateTime.UtcNow)
-                return null;
+			if (pasetoInstance.Expiration != null && pasetoInstance.Expiration.Value < DateTime.UtcNow)
+				return null;
 
-            if (pasetoInstance.NotBefore != null && pasetoInstance.NotBefore.Value > DateTime.UtcNow)
-                return null;
+			if (pasetoInstance.NotBefore != null && pasetoInstance.NotBefore.Value > DateTime.UtcNow)
+				return null;
 
 			return pasetoInstance;
 		}
