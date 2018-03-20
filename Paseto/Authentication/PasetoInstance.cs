@@ -48,7 +48,7 @@ namespace Paseto.Authentication
         public DateTime? IssuedAt { get; set; }
         public string TokenIdentifier { get; set; }
         public IDictionary<string, object> AdditionalClaims { get; set; } = new Dictionary<string, object>();
-        public IDictionary<string, object> Footer { get; set; }= new Dictionary<string, object>();
+        public IDictionary<string, object> Footer { get; set; } = new Dictionary<string, object>();
 
         private static DateTime? ToDateTime(string date) => date == null ? default(DateTime?) :
             DateTime.ParseExact(date, _iso8601Format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
