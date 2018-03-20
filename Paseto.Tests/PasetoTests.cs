@@ -94,6 +94,7 @@ namespace Paseto.Tests
 				Subject = "2986689",
 			};
 
+			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims), validateTimes: false));
 			Assert.Null(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
 			testClaims.Expiration = DateTime.UtcNow.AddSeconds(1);
 			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
@@ -108,6 +109,7 @@ namespace Paseto.Tests
 				Subject = "2986689",
 			};
 
+			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims), validateTimes: false));
 			Assert.Null(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
 			testClaims.NotBefore = DateTime.UtcNow.AddSeconds(-1);
 			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));

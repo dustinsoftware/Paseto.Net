@@ -107,7 +107,7 @@ namespace Paseto.Authentication
 			};
 		}
 
-		public static PasteoInstance Parse(byte[] publicKey, string signedMessage, bool validateExpiration = true)
+		public static PasteoInstance Parse(byte[] publicKey, string signedMessage, bool validateTimes = true)
 		{
 			var result = ParseBytes(publicKey, signedMessage);
 			if (result == null)
@@ -130,11 +130,14 @@ namespace Paseto.Authentication
 
 			var pasetoInstance = new PasteoInstance(payloadJson) { Footer = footerJson };
 
-			if (pasetoInstance.Expiration != null && pasetoInstance.Expiration.Value < DateTime.UtcNow)
-				return null;
+			if (validateTimes)
+			{
+				if (pasetoInstance.Expiration != null && pasetoInstance.Expiration.Value < DateTime.UtcNow)
+					return null;
 
-			if (pasetoInstance.NotBefore != null && pasetoInstance.NotBefore.Value > DateTime.UtcNow)
-				return null;
+				if (pasetoInstance.NotBefore != null && pasetoInstance.NotBefore.Value > DateTime.UtcNow)
+					return null;
+			}
 
 			return pasetoInstance;
 		}
