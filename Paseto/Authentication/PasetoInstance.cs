@@ -65,9 +65,14 @@ namespace Paseto.Authentication
 		public IDictionary<string, object> Footer { get; set; }
 
 		private static DateTime? ToDateTime(string date) => date == null ? default(DateTime?) :
-			DateTime.ParseExact(date, _iso8601Format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+			DateTime.ParseExact(
+				date,
+				date.EndsWith("Z", StringComparison.Ordinal) ? _iso8601FormatUtc : _iso8601Format,
+				CultureInfo.InvariantCulture,
+				DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
 
 		private const string _iso8601Format = "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz";
+		private const string _iso8601FormatUtc = "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ";
 		private static HashSet<string> _reservedKeys = new HashSet<string>(new[] { "iss", "sub", "aud", "exp", "nbf", "iat", "jti" });
 }
 }

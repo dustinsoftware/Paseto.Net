@@ -133,6 +133,16 @@ namespace Paseto.Tests
 		}
 
 		[Theory]
+		[InlineData("{ \"exp\": \"2018-03-20T00:00:00-07:00\"}")]
+		[InlineData("{ \"exp\": \"2018-03-20T07:00:00Z\"}")]
+		[InlineData("{ \"exp\": \"2018-03-20T07:00:00+00:00\"}")]
+		public void TimezonesAreAllowed(string tokenJson)
+		{
+			var signedBytes = PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes(tokenJson));
+			Assert.Equal("2018-03-20T07:00:00+00:00", PasetoUtility.Parse(_publicKey, signedBytes, validateTimes: false).Expiration.Value.ToString(Iso8601Format));
+		}
+
+		[Theory]
 		[InlineData("{")]
 		[InlineData("{ \"exp\": \"a\" }")]
 		[InlineData("{ \"sub\": 2986689 }")]
