@@ -14,6 +14,9 @@ namespace Paseto.Authentication
 
 		public PasteoInstance(IDictionary<string, object> claims)
 		{
+			if (claims == null)
+				throw new ArgumentNullException(nameof(claims));
+
 			try
 			{
 				Issuer = TryGet(claims, "iss");
@@ -36,7 +39,7 @@ namespace Paseto.Authentication
 
 		public IDictionary<string, object> ToDictionary()
 		{
-			return AdditionalClaims.Concat(
+			return (AdditionalClaims ?? new Dictionary<string, object>()).Concat(
 				new Dictionary<string, object>
 				{
 					["iss"] = Issuer,
@@ -58,8 +61,8 @@ namespace Paseto.Authentication
 		public DateTime? NotBefore { get; set; }
 		public DateTime? IssuedAt { get; set; }
 		public string TokenIdentifier { get; set; }
-		public IDictionary<string, object> AdditionalClaims { get; set; } = new Dictionary<string, object>();
-		public IDictionary<string, object> Footer { get; set; } = new Dictionary<string, object>();
+		public IDictionary<string, object> AdditionalClaims { get; set; }
+		public IDictionary<string, object> Footer { get; set; }
 
 		private static DateTime? ToDateTime(string date) => date == null ? default(DateTime?) :
 			DateTime.ParseExact(date, _iso8601Format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
