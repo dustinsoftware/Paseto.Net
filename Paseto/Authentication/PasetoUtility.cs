@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using Sodium;
+using Paseto.Internal.SimpleJson;
 
 namespace Paseto.Authentication
 {
@@ -16,24 +17,15 @@ namespace Paseto.Authentication
 
 			string header = "v2.local.";
 
-			if (nonce == null)
-			{
-				nonce = new byte[24];
-				using (var random = new RNGCryptoServiceProvider())
-					random.GetBytes(nonce);
-			}
-
-			var hashAlgorithm = new GenericHash.GenericHashAlgorithm(nonce, 24);
-			byte[] macBytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(payload));
+			byte[] macBytes = Algorithm.Hash(Encoding.UTF8.GetBytes(payload), nonce);
 
 			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), macBytes, Encoding.UTF8.GetBytes(footer) });
 
-			byte[] encryptedPayload = SecretAead.Encrypt(Encoding.UTF8.GetBytes(payload), macBytes, symmetricKey, preAuth, useXChaCha: true);
+			byte[] encryptedPayload = Algorithm.Encrypt(Encoding.UTF8.GetBytes(payload), macBytes, symmetricKey, preAuth);
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 			return $"{header}{ToBase64Url(macBytes.Concat(encryptedPayload))}{footerToAppend}";
 		}
-
 		public static string Decrypt(byte[] symmetricKey, string signedMessage)
 		{
 			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
@@ -51,10 +43,10 @@ namespace Paseto.Authentication
 
 			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, footer });
 
-			return Encoding.UTF8.GetString(SecretAead.Decrypt(payload, nonceBytes, symmetricKey, preAuth, useXChaCha: true));
+			return Encoding.UTF8.GetString(Algorithm.Decrypt(payload, nonceBytes, symmetricKey, preAuth));
 		}
 
-		public static string Sign(byte[] publicKey, byte[] privateKey, string payload, string footer = "")
+		public static string SignBytes(byte[] publicKey, byte[] privateKey, byte[] payload, string footer = "")
 		{
 			if (publicKey?.Length != 32)
 				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
@@ -67,20 +59,25 @@ namespace Paseto.Authentication
 
 			string header = "v2.public.";
 
-			byte[] m2 = PreAuthEncode(new[] { header, payload, footer }.Select(Encoding.UTF8.GetBytes).ToArray());
+			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, Encoding.UTF8.GetBytes(footer) }.ToArray());
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 
-			byte[] signature = PublicKeyAuth.SignDetached(m2, privateKey.Concat(publicKey).ToArray());
+			byte[] signature = Algorithm.Sign(m2, privateKey.Concat(publicKey).ToArray());
 
-			string createdPaseto = $"{header}{ToBase64Url(Encoding.UTF8.GetBytes(payload).Concat(signature))}{footerToAppend}";
+			string createdPaseto = $"{header}{ToBase64Url(payload.Concat(signature))}{footerToAppend}";
 
-			Assert(Parse(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
+			Assert(ParseBytes(publicKey, createdPaseto) != null, "Created paseto could not be parsed");
 			return createdPaseto;
 		}
 
+		public static string Sign(byte[] publicKey, byte[] privateKey, IDictionary<string, object> claims, string footer = "")
+		{
+			return SignBytes(publicKey, privateKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(claims)), footer);
+		}
+
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
-		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage)
+		public static ParsedPasetoBytes ParseBytes(byte[] publicKey, string signedMessage)
 		{
 			if (signedMessage == null)
 				throw new ArgumentNullException(signedMessage);
@@ -99,36 +96,67 @@ namespace Paseto.Authentication
 
 			byte[] m2 = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), payload, footer });
 
-			if (!PublicKeyAuth.VerifyDetached(signature, m2, publicKey))
+			if (!Algorithm.Verify(signature, m2, publicKey))
 				return null;
 
-			return new ParsedPaseto
+			return new ParsedPasetoBytes
 			{
-				Payload = Encoding.UTF8.GetString(payload),
-				Footer = Encoding.UTF8.GetString(footer),
+				Payload = payload,
+				Footer = footer,
 			};
 		}
 
-		public static void Assert(bool condition, string reason)
+		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage, bool validateExpiration = true)
+		{
+			var result = ParseBytes(publicKey, signedMessage);
+			if (result == null)
+				return null;
+
+			var payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload)) as IDictionary<string, object>;
+			if (payloadJson == null)
+				return null;
+
+			payloadJson.TryGetValue("exp", out var expirationString);
+
+			if (expirationString != null)
+			{
+				if (!DateTime.TryParseExact((string) expirationString, "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedExpirationDate))
+					throw new FormatException("exp was not in ISO 8601 format");
+
+				if (parsedExpirationDate < DateTime.UtcNow)
+					return null;
+			}
+
+			string footerString = Encoding.UTF8.GetString(result.Footer);
+			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString);
+
+			return new ParsedPaseto
+			{
+				Payload = payloadJson as IDictionary<string, object>,
+				Footer = footerJson as IDictionary<string, object>,
+			};
+		}
+
+		internal static void Assert(bool condition, string reason)
 		{
 			if (!condition)
 				throw new FormatException("The format of the message or signature was invalid. " + reason);
 		}
 
 		// https://github.com/paragonie/paseto/blob/785723a02bc27e0e90821b0852d9e86573bbe63d/docs/01-Protocol-Versions/Common.md#authentication-padding
-		public static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces) =>
+		internal static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces) =>
 			BitConverter.GetBytes((ulong) pieces.Count)
 			.Concat(pieces.SelectMany(piece => BitConverter.GetBytes((ulong) piece.Length).Concat(piece)))
 			.ToArray();
 
-		public static string ToBase64Url(IEnumerable<byte> source) =>
+		internal static string ToBase64Url(IEnumerable<byte> source) =>
 			Convert.ToBase64String(source.ToArray())
 			.Replace("=", "")
 			.Replace('+', '-')
 			.Replace('/', '_');
 
 		// Replace some characters in the base 64 string and add padding so .NET can parse it
-		public static byte[] FromBase64Url(string source) =>
+		internal static byte[] FromBase64Url(string source) =>
 			Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
 			.Replace('-', '+')
 			.Replace('_', '/'));

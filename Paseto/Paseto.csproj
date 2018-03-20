@@ -14,6 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\ext\simple-json\src\SimpleJson\SimpleJson.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="dpm-libsodium-net" Version="0.13.0" />
   </ItemGroup>
 

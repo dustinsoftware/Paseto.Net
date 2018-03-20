@@ -16,6 +16,9 @@
   <ItemGroup>
     <Compile Include="..\ext\Chaos.NaCl\Chaos.NaCl\**\*.cs" />
     <Compile Remove="..\ext\Chaos.NaCl\Chaos.NaCl\Properties\*.cs" />
+    <Compile Include="..\ext\simple-json\src\SimpleJson\SimpleJson.cs" />
+    <Compile Include="..\Paseto\Authentication\*.cs" />
+    <Compile Remove="..\Paseto\Authentication\Algorithm.cs" />
   </ItemGroup>
 
   <PropertyGroup>

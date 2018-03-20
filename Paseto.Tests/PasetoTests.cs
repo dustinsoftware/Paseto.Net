@@ -32,8 +32,8 @@ namespace Paseto.Tests
 		public void RoundTrip()
 		{
 			const string payload = "Frank Denis rocks";
-			string signature = PasetoUtility.Sign(_publicKey, _privateKey, payload);
-			Assert.Equal(payload, PasetoUtility.Parse(_publicKey, signature).Payload);
+			string signature = PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes(payload));
+			Assert.Equal(payload, Encoding.UTF8.GetString(PasetoUtility.ParseBytes(_publicKey, signature).Payload));
 		}
 
 		[Theory]
@@ -42,11 +42,42 @@ namespace Paseto.Tests
 		[InlineData("v2.public.RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM", "Frank Denis rocks")]
 		public void Parse(string message, string payload, string footer = "")
 		{
-			var parsed = PasetoUtility.Parse(_publicKey, message);
-			Assert.Equal(payload, parsed.Payload);
-			Assert.Equal(footer, parsed.Footer);
+			var parsed = PasetoUtility.ParseBytes(_publicKey, message);
+			Assert.Equal(payload, Encoding.UTF8.GetString(parsed.Payload));
+			Assert.Equal(footer, Encoding.UTF8.GetString(parsed.Footer));
 
 			Assert.Null(PasetoUtility.Parse(new byte[32], message));
+		}
+
+		[Fact]
+		public void JsonDataRoundTrip()
+		{
+			var testClaims = new Dictionary<string, object>{
+				["iss"] = "http://auth.example.com",
+				["exp"] = DateTime.UtcNow.AddMinutes(10).ToString(Iso8601Format),
+				["sub"] = (long) 2986689,
+				["roles"] = new[] {"Admin", "User"}
+			};
+
+			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
+			var parsedToken = PasetoUtility.Parse(_publicKey, token);
+
+			Assert.Equal(testClaims["iss"], parsedToken.Payload["iss"]);
+			Assert.Equal(testClaims["exp"], parsedToken.Payload["exp"]);
+			Assert.Equal(testClaims["sub"], parsedToken.Payload["sub"]);
+			Assert.Equal(testClaims["roles"], parsedToken.Payload["roles"]);
+		}
+
+		[Fact]
+		public void ExpiredTokenDoesNotParse()
+		{
+			var testClaims = new Dictionary<string, object>{
+				["exp"] = DateTime.UtcNow.AddSeconds(-1).ToString(Iso8601Format),
+				["sub"] = (long) 2986689,
+			};
+
+			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
+			Assert.Null(PasetoUtility.Parse(_publicKey, token));
 		}
 
 		[Fact]
@@ -55,7 +86,7 @@ namespace Paseto.Tests
 			Assert.Equal("Hello world", Encoding.UTF8.GetString(HexToBytes("48656C6C6F20776F726C64")));
 		}
 
-		public static byte[] HexToBytes(string hexString)
+		private static byte[] HexToBytes(string hexString)
 		{
 			var bytes = new byte[hexString.Length / 2];
 			for (int i = 0; i < bytes.Length; i++)
@@ -65,5 +96,7 @@ namespace Paseto.Tests
 
 			return bytes;
 		}
+
+		private const string Iso8601Format = "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz";
 	}
 }

@@ -1,3 +1,8 @@
 [submodule "ext/Chaos.NaCl"]
 	path = ext/Chaos.NaCl
 	url = https://github.com/dustinsoftware/Chaos.NaCl
+	branch = paseto
+[submodule "ext/simple-json"]
+	path = ext/simple-json
+	url = https://github.com/dustinsoftware/simple-json
+	branch = paseto
