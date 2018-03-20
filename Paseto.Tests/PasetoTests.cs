@@ -114,10 +114,10 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
-		public void EmptyTokenParses()
+		public void EmptyTokenRoundTrip()
 		{
-			string token = PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes("{}"));
-			PasetoUtility.Parse(_publicKey, token);
+			PasetoUtility.Parse(_publicKey, PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes("{}")));
+			Assert.Equal("{}", Encoding.UTF8.GetString(PasetoUtility.ParseBytes(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, new PasteoInstance())).Payload));
 		}
 
 		[Theory]

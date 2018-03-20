@@ -50,7 +50,7 @@ namespace Paseto.Authentication
 					["iat"] = IssuedAt?.ToString(_iso8601Format, CultureInfo.InvariantCulture),
 					["jti"] = TokenIdentifier,
 				}
-			).ToDictionary(x => x.Key, x => x.Value);
+			).Where(x => x.Value != null).ToDictionary(x => x.Key, x => x.Value);
 		}
 
 		public string Issuer { get; set; }
