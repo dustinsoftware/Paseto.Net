@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Paseto.Internal.SimpleJson;
 
 namespace Paseto.Authentication
 {
@@ -13,15 +14,25 @@ namespace Paseto.Authentication
 
         public PasteoInstance(IDictionary<string, object> claims)
         {
-            Issuer = (string) claims["iss"];
-            Subject = (string) claims["sub"];
-            Audience = (string) claims["aud"];
-            Expiration = ToDateTime((string) claims["exp"]);
-            NotBefore = ToDateTime((string) claims["nbf"]);
-            IssuedAt = ToDateTime((string) claims["iat"]);
-            TokenIdentifier = (string) claims["jti"];
-            AdditionalClaims = claims.Where(x => !_reservedKeys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
+            try
+            {
+                Issuer = TryGet(claims, "iss");
+                Subject = TryGet(claims, "sub");
+                Audience = TryGet(claims, "aud");
+                Expiration = ToDateTime(TryGet(claims, "exp"));
+                NotBefore = ToDateTime(TryGet(claims, "nbf"));
+                IssuedAt = ToDateTime(TryGet(claims, "iat"));
+                TokenIdentifier = TryGet(claims, "jti");
+                AdditionalClaims = claims.Where(x => !_reservedKeys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value);
+            }
+            catch (Exception exception) when (exception is FormatException || exception is InvalidCastException)
+            {
+                throw new PasetoFormatException("Claims were not in a valid format. " + SimpleJson.SerializeObject(claims));
+            }
         }
+
+        private string TryGet(IDictionary<string, object> dict, string key) =>
+            ((string) (dict.ContainsKey(key) ? dict[key] : null));
 
         public IDictionary<string, object> ToDictionary()
         {

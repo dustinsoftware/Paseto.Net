@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using Paseto.Internal.SimpleJson;
@@ -112,9 +113,17 @@ namespace Paseto.Authentication
 			if (result == null)
 				return null;
 
-			var payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload)) as IDictionary<string, object>;
-			if (payloadJson == null)
-				return null;
+            IDictionary<string, object> payloadJson;
+            try
+            {
+                payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload)) as IDictionary<string, object>;
+                if (payloadJson == null)
+                    return null;
+            }
+            catch (SerializationException e)
+            {
+                throw new PasetoFormatException("Serialization error. " + e);
+            }
 
 			string footerString = Encoding.UTF8.GetString(result.Footer);
 			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString) as IDictionary<string, object>;

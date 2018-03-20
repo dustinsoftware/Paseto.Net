@@ -114,6 +114,23 @@ namespace Paseto.Tests
         }
 
         [Fact]
+        public void EmptyTokenParses()
+        {
+            string token = PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes("{}"));
+            PasetoUtility.Parse(_publicKey, token);
+        }
+
+        [Theory]
+        [InlineData("{")]
+        [InlineData("{ \"exp\": \"a\" }")]
+        [InlineData("{ \"sub\": 2986689 }")]
+        public void InvalidJsonThrows(string str)
+        {
+            string token = PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes(str));
+            Assert.Throws<PasetoFormatException>(() => PasetoUtility.Parse(_publicKey, token));
+        }
+
+        [Fact]
         public void HexString()
         {
             Assert.Equal("Hello world", Encoding.UTF8.GetString(HexToBytes("48656C6C6F20776F726C64")));
