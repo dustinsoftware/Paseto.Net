@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using Paseto.Internal.SimpleJson;
@@ -11,22 +12,27 @@ namespace Paseto.Authentication
 	public static class PasetoUtility
 	{
 		// https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Version2.md#encrypt
-		public static string Encrypt(byte[] symmetricKey, string payload, string footer = "", byte[] nonce = null)
+		public static string EncryptBytes(byte[] symmetricKey, byte[] payload, string footer = "", byte[] nonce = null)
 		{
 			if (payload == null) throw new ArgumentNullException(nameof(payload));
 
 			string header = "v2.local.";
 
-			byte[] macBytes = Algorithm.Hash(Encoding.UTF8.GetBytes(payload), nonce);
+			byte[] macBytes = Algorithm.Hash(payload, nonce);
 
 			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), macBytes, Encoding.UTF8.GetBytes(footer) });
 
-			byte[] encryptedPayload = Algorithm.Encrypt(Encoding.UTF8.GetBytes(payload), macBytes, symmetricKey, preAuth);
+			byte[] encryptedPayload = Algorithm.Encrypt(payload, macBytes, symmetricKey, preAuth);
 
 			string footerToAppend = footer == "" ? "" : $".{ToBase64Url(Encoding.UTF8.GetBytes(footer))}";
 			return $"{header}{ToBase64Url(macBytes.Concat(encryptedPayload))}{footerToAppend}";
 		}
-		public static string Decrypt(byte[] symmetricKey, string signedMessage)
+
+		public static string Encrypt(byte[] symmetricKey, PasteoInstance payload, byte[] nonce = null) =>
+			EncryptBytes(symmetricKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(payload.ToDictionary())), SimpleJson.SerializeObject(payload.Footer), nonce);
+
+
+		public static ParsedPasetoBytes DecryptBytes(byte[] symmetricKey, string signedMessage)
 		{
 			if (signedMessage == null) throw new ArgumentNullException(signedMessage);
 
@@ -43,7 +49,20 @@ namespace Paseto.Authentication
 
 			byte[] preAuth = PreAuthEncode(new[] { Encoding.UTF8.GetBytes(header), nonceBytes, footer });
 
-			return Encoding.UTF8.GetString(Algorithm.Decrypt(payload, nonceBytes, symmetricKey, preAuth));
+			return new ParsedPasetoBytes
+			{
+				Payload = Algorithm.Decrypt(payload, nonceBytes, symmetricKey, preAuth),
+				Footer = footer,
+			};
+		}
+
+		public static PasteoInstance Decrypt(byte[] symmetricKey, string signedMessage, bool validateTimes = true)
+		{
+			var result = DecryptBytes(symmetricKey, signedMessage);
+			if (result == null)
+				return null;
+
+			return ParsePayload(Encoding.UTF8.GetString(result.Payload), Encoding.UTF8.GetString(result.Footer), validateTimes);
 		}
 
 		public static string SignBytes(byte[] publicKey, byte[] privateKey, byte[] payload, string footer = "")
@@ -71,9 +90,9 @@ namespace Paseto.Authentication
 			return createdPaseto;
 		}
 
-		public static string Sign(byte[] publicKey, byte[] privateKey, IDictionary<string, object> claims, string footer = "")
+		public static string Sign(byte[] publicKey, byte[] privateKey, PasteoInstance claims)
 		{
-			return SignBytes(publicKey, privateKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(claims)), footer);
+			return SignBytes(publicKey, privateKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(claims.ToDictionary())), SimpleJson.SerializeObject(claims.Footer));
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
@@ -106,35 +125,43 @@ namespace Paseto.Authentication
 			};
 		}
 
-		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage, bool validateExpiration = true)
+		public static PasteoInstance Parse(byte[] publicKey, string signedMessage, bool validateTimes = true)
 		{
 			var result = ParseBytes(publicKey, signedMessage);
 			if (result == null)
 				return null;
 
-			var payloadJson = SimpleJson.DeserializeObject(Encoding.UTF8.GetString(result.Payload)) as IDictionary<string, object>;
-			if (payloadJson == null)
-				return null;
+			return ParsePayload(Encoding.UTF8.GetString(result.Payload), Encoding.UTF8.GetString(result.Footer), validateTimes);
+		}
 
-			payloadJson.TryGetValue("exp", out var expirationString);
-
-			if (expirationString != null)
+		internal static PasteoInstance ParsePayload(string payload, string footer, bool validateTimes = true)
+		{
+			IDictionary<string, object> payloadJson;
+			try
 			{
-				if (!DateTime.TryParseExact((string) expirationString, "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedExpirationDate))
-					throw new FormatException("exp was not in ISO 8601 format");
+				payloadJson = SimpleJson.DeserializeObject(payload) as IDictionary<string, object>;
+				if (payloadJson == null)
+					return null;
+			}
+			catch (SerializationException e)
+			{
+				throw new PasetoFormatException("Serialization error. " + e);
+			}
 
-				if (parsedExpirationDate < DateTime.UtcNow)
+			var footerJson = footer == "" ? null : SimpleJson.DeserializeObject(footer) as IDictionary<string, object>;
+
+			var pasetoInstance = new PasteoInstance(payloadJson) { Footer = footerJson };
+
+			if (validateTimes)
+			{
+				if (pasetoInstance.Expiration != null && pasetoInstance.Expiration.Value < DateTime.UtcNow)
+					return null;
+
+				if (pasetoInstance.NotBefore != null && pasetoInstance.NotBefore.Value > DateTime.UtcNow)
 					return null;
 			}
 
-			string footerString = Encoding.UTF8.GetString(result.Footer);
-			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString);
-
-			return new ParsedPaseto
-			{
-				Payload = payloadJson as IDictionary<string, object>,
-				Footer = footerJson as IDictionary<string, object>,
-			};
+			return pasetoInstance;
 		}
 
 		internal static void Assert(bool condition, string reason)

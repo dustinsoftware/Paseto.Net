@@ -12,7 +12,8 @@ For more information about the standard: https://github.com/paragonie/paseto
 * Supports full .NET Framework and .NET Core (Windows / OS X / Linux)
 * v2 public authentication (uses Ed25519 signatures)
 * v2 local authentication (uses XChaCha20-Poly1305 and Blake2b)
-* No dependency on JSON.NET (you need to structure the tokens yourself)
+* No dependency on JSON.NET
+* Easy token creation *and* support for raw byte arrays
 
 ### Non-goals:
 * This library doesn't support v1 tokens. Per the [spec](https://github.com/paragonie/paseto/tree/9532a73d0db04d083681a859ec232d1d7ddfa5dd/docs/01-Protocol-Versions) v1 tokens should only be used on systems that can't support modern cryptography.
@@ -20,6 +21,7 @@ For more information about the standard: https://github.com/paragonie/paseto
 ### Credits:
 - Managed Ed25519 implementation from https://github.com/CodesInChaos/Chaos.NaCl
 - A fork of [libsodium-net](https://github.com/dustinsoftware/libsodium-net/) is used for XChaCha20-Poly1305
+- [simple-json](https://github.com/facebook-csharp-sdk/simple-json) for the embedded JSON parser
 
 ### Installation
 ```
@@ -32,13 +34,42 @@ Install-Package Paseto
 ```csharp
 using Paseto.Authentication;
 
-// v2 public
-const string payload = "Hello Paseto.Net";
-string signature = PasetoUtility.Sign(_publicKey, _privateKey, payload); // v2.public.signature
-Assert.Equal(payload, PasetoUtility.Parse(_publicKey, signature).Payload);
+// Creating a token
+var claims = new PasteoInstance
+{
+	Issuer = "http://auth.example.com",
+	Subject = "2986689",
+	Audience = "audience",
+	Expiration = now.AddMinutes(10),
+	NotBefore = now.AddMinutes(-10),
+	IssuedAt = now,
+	AdditionalClaims = new Dictionary<string, object>
+	{
+		["roles"] = new[] { "Admin", "User" }
+	},
+	Footer = new Dictionary<string, object>
+	{
+		["kid"] = "dpm0"
+	},
+};
 
-// v2 local
-const string payload = "Love is stronger than hate or fear";
-string encrypted = PasetoUtility.Encrypt(_symmetricKey, payload, nonce);
-Assert.Equal(payload, PasetoUtility.Decrypt(_symmetricKey, encrypted));
+// Signing and parsing the token with public signing
+string token = PasetoUtility.Sign(_publicKey, _privateKey, claims);
+var parsedToken = PasetoUtility.Parse(_publicKey, token, validateTimes: true);
+Assert.Equal(claims.Subject, parsedToken.Subject);
+
+// Same, but with local encryption
+string token = PasetoUtility.Encrypt(_symmetricKey, claims);
+var parsedToken = PasetoUtility.Decrypt(_symmetricKey, token, validateTimes: true);
+Assert.Equal(claims.Subject, parsedToken.Subject);
+
+// Arbitrary byte array support with public signing
+byte[] payload = Encoding.UTF8.GetBytes("Hello Paseto.Net");
+string signature = PasetoUtility.SignBytes(_publicKey, _privateKey, payload); // v2.public.signature
+Assert.Equal(payload, PasetoUtility.ParseBytes(_publicKey, signature).Payload);
+
+// Same, but with local encryption
+byte[] payload = Encoding.UTF8.GetBytes("Hello Paseto.Net");
+string encrypted = PasetoUtility.EncryptBytes(_symmetricKey, payload, nonce);
+Assert.Equal(payload, PasetoUtility.DecryptBytes(_symmetricKey, encrypted));
 ```

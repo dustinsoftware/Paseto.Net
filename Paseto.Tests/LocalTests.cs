@@ -23,15 +23,15 @@ namespace Paseto.Tests
 		public void RoundTripPrivate()
 		{
 			const string payload = "Love is stronger than hate or fear";
-			string encrypted = PasetoUtility.Encrypt(_symmetricKey, payload, nonce: new byte[24]);
-			Assert.Equal(payload, PasetoUtility.Decrypt(_symmetricKey, encrypted));
+			string encrypted = PasetoUtility.EncryptBytes(_symmetricKey, Encoding.UTF8.GetBytes(payload), nonce: new byte[24]);
+			Assert.Equal(payload, Encoding.UTF8.GetString(PasetoUtility.DecryptBytes(_symmetricKey, encrypted).Payload));
 		}
 
 		[Theory]
 		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNUtKpdy5KXjKfpSKrOlqQvQ")]
 		public void EncryptWithNullKey(string payload, string message)
 		{
-			Assert.Equal(message, PasetoUtility.Encrypt(new byte[32], payload, nonce: new byte[24]));
+			Assert.Equal(message, PasetoUtility.EncryptBytes(new byte[32], Encoding.UTF8.GetBytes(payload), nonce: new byte[24]));
 		}
 
 		[Theory]
@@ -41,8 +41,45 @@ namespace Paseto.Tests
 		public void Encrypt(string payload, string message, string footer = "")
 		{
 			var nonce = new byte[24];
-			Assert.Equal(message, PasetoUtility.Encrypt(_symmetricKey, payload, footer, nonce));
+			Assert.Equal(message, PasetoUtility.EncryptBytes(_symmetricKey, Encoding.UTF8.GetBytes(payload), footer, nonce));
 		}
+
+		[Fact]
+		public void JsonDataRoundTrip()
+		{
+			var date = DateTime.UtcNow;
+
+			var claims = new PasteoInstance
+			{
+				Issuer = "http://auth.example.com",
+				Subject = "2986689",
+				Audience = "audience",
+				Expiration = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, date.Kind).AddMinutes(10),
+				NotBefore = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, date.Kind).AddMinutes(-10),
+				IssuedAt = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, date.Kind),
+				AdditionalClaims = new Dictionary<string, object>
+				{
+					["roles"] = new[] { "Admin", "User" }
+				},
+				Footer = new Dictionary<string, object>
+				{
+					["kid"] = "dpm0"
+				},
+			};
+
+			string token = PasetoUtility.Encrypt(_symmetricKey, claims);
+			var parsedToken = PasetoUtility.Decrypt(_symmetricKey, token, validateTimes: true);
+
+			Assert.Equal(claims.Issuer, parsedToken.Issuer);
+			Assert.Equal(claims.Subject, parsedToken.Subject);
+			Assert.Equal(claims.Audience, parsedToken.Audience);
+			Assert.Equal(claims.Expiration, parsedToken.Expiration);
+			Assert.Equal(claims.NotBefore, parsedToken.NotBefore);
+			Assert.Equal(claims.IssuedAt, parsedToken.IssuedAt);
+			Assert.Equal(claims.AdditionalClaims, parsedToken.AdditionalClaims);
+			Assert.Equal(claims.Footer, parsedToken.Footer);
+		}
+
 		public static byte[] HexToBytes(string hexString)
 		{
 			var bytes = new byte[hexString.Length / 2];
