@@ -86,6 +86,16 @@ namespace Paseto.Tests
 		}
 
 		[Fact]
+		public void FooterCanBeParsed()
+		{
+			string footerText = "Hello friend";
+			Assert.Equal(footerText, PasetoUtility.ParseFooter(PasetoUtility.SignBytes(_publicKey, _privateKey, new byte[0], footerText)));
+
+			var footerJson = new Dictionary<string, object> { ["hello"] = "friend" };
+			Assert.Equal(footerJson, PasetoUtility.ParseFooterJson(PasetoUtility.Sign(_publicKey, _privateKey, new PasteoInstance { Footer = footerJson })));
+		}
+
+		[Fact]
 		public void ExpiredTokenDoesNotParse()
 		{
 			var testClaims = new PasteoInstance

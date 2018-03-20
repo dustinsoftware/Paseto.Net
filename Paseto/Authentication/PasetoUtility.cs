@@ -11,6 +11,15 @@ namespace Paseto.Authentication
 {
 	public static class PasetoUtility
 	{
+		public static string ParseFooter(string signedMessage)
+		{
+			var tokenParts = signedMessage.Split('.');
+			return Encoding.UTF8.GetString(FromBase64Url(tokenParts.Length > 3 ? tokenParts[3] : ""));
+		}
+
+		public static IDictionary<string, object> ParseFooterJson(string signedMessage) =>
+			SimpleJson.DeserializeObject(ParseFooter(signedMessage)) as IDictionary<string, object>;
+
 		// https://github.com/paragonie/paseto/blob/master/docs/01-Protocol-Versions/Version2.md#encrypt
 		public static string EncryptBytes(byte[] symmetricKey, byte[] payload, string footer = "", byte[] nonce = null)
 		{

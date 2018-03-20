@@ -34,6 +34,16 @@ namespace Paseto.Tests
 			Assert.Equal(message, PasetoUtility.EncryptBytes(new byte[32], Encoding.UTF8.GetBytes(payload), nonce: new byte[24]));
 		}
 
+		[Fact]
+		public void FooterCanBeParsed()
+		{
+			string footerText = "Hello friend";
+			Assert.Equal(footerText, PasetoUtility.ParseFooter(PasetoUtility.EncryptBytes(_symmetricKey, new byte[0], footerText)));
+
+			var footerJson = new Dictionary<string, object> { ["hello"] = "friend" };
+			Assert.Equal(footerJson, PasetoUtility.ParseFooterJson(PasetoUtility.Encrypt(_symmetricKey, new PasteoInstance { Footer = footerJson })));
+		}
+
 		[Theory]
 		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNkIWACdHuLiJiW16f2GuGYA")]
 		[InlineData("", "v2.local.driRNhM20GQPvlWfJCepzh6HdijAq-yNreCcZAS0iGVlzdHjTf2ilg.Q3VvbiBBbHBpbnVz", "Cuon Alpinus")]

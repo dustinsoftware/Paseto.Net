@@ -72,4 +72,11 @@ Assert.Equal(payload, PasetoUtility.ParseBytes(_publicKey, signature).Payload);
 byte[] payload = Encoding.UTF8.GetBytes("Hello Paseto.Net");
 string encrypted = PasetoUtility.EncryptBytes(_symmetricKey, payload, nonce);
 Assert.Equal(payload, PasetoUtility.DecryptBytes(_symmetricKey, encrypted));
+
+// Read footer without decrypting (untrusted data!)
+string footerText = "Hello friend";
+Assert.Equal(footerText, PasetoUtility.GetFooter(PasetoUtility.EncryptBytes(_symmetricKey, new byte[0], footerText)));
+
+var footerJson = new Dictionary<string, object> { ["key-id"] = "key10" };
+Assert.Equal(footerJson, PasetoUtility.GetFooterJson(PasetoUtility.Encrypt(_symmetricKey, new PasteoInstance { Footer = footerJson })));
 ```
