@@ -94,8 +94,23 @@ namespace Paseto.Tests
                 Subject = "2986689",
             };
 
-            string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
-            Assert.Null(PasetoUtility.Parse(_publicKey, token));
+            Assert.Null(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
+            testClaims.Expiration = DateTime.UtcNow.AddSeconds(1);
+            Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
+        }
+
+        [Fact]
+        public void FutureTokenDoesNotParse()
+        {
+            var testClaims = new PasteoInstance
+            {
+                NotBefore = DateTime.UtcNow.AddSeconds(1),
+                Subject = "2986689",
+            };
+
+            Assert.Null(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
+            testClaims.NotBefore = DateTime.UtcNow.AddSeconds(-1);
+            Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
         }
 
         [Fact]

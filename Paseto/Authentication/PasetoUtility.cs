@@ -116,21 +116,18 @@ namespace Paseto.Authentication
 			if (payloadJson == null)
 				return null;
 
-			payloadJson.TryGetValue("exp", out var expirationString);
-
-			if (expirationString != null)
-			{
-				if (!DateTime.TryParseExact((string) expirationString, "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedExpirationDate))
-					throw new FormatException("exp was not in ISO 8601 format");
-
-				if (parsedExpirationDate < DateTime.UtcNow)
-					return null;
-			}
-
 			string footerString = Encoding.UTF8.GetString(result.Footer);
 			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString) as IDictionary<string, object>;
 
-			return new PasteoInstance(payloadJson) { Footer = footerJson };
+            var pasetoInstance = new PasteoInstance(payloadJson) { Footer = footerJson };
+
+            if (pasetoInstance.Expiration != null && pasetoInstance.Expiration.Value < DateTime.UtcNow)
+                return null;
+
+            if (pasetoInstance.NotBefore != null && pasetoInstance.NotBefore.Value > DateTime.UtcNow)
+                return null;
+
+			return pasetoInstance;
 		}
 
 		internal static void Assert(bool condition, string reason)
