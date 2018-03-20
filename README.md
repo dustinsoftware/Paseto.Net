@@ -53,19 +53,23 @@ var claims = new PasteoInstance
 	},
 };
 
-// Signing and parsing the token.
+// Signing and parsing the token with public signing
 string token = PasetoUtility.Sign(_publicKey, _privateKey, claims);
 var parsedToken = PasetoUtility.Parse(_publicKey, token, validateTimes: true);
-
 Assert.Equal(claims.Subject, parsedToken.Subject);
 
-// v2 public
+// Same, but with local encryption
+string token = PasetoUtility.Encrypt(_symmetricKey, claims);
+var parsedToken = PasetoUtility.Decrypt(_symmetricKey, token, validateTimes: true);
+Assert.Equal(claims.Subject, parsedToken.Subject);
+
+// Arbitrary byte array support with public signing
 byte[] payload = Encoding.UTF8.GetBytes("Hello Paseto.Net");
 string signature = PasetoUtility.SignBytes(_publicKey, _privateKey, payload); // v2.public.signature
 Assert.Equal(payload, PasetoUtility.ParseBytes(_publicKey, signature).Payload);
 
-// v2 local
-const string payload = "Love is stronger than hate or fear";
-string encrypted = PasetoUtility.Encrypt(_symmetricKey, payload, nonce);
-Assert.Equal(payload, PasetoUtility.Decrypt(_symmetricKey, encrypted));
+// Same, but with local encryption
+byte[] payload = Encoding.UTF8.GetBytes("Hello Paseto.Net");
+string encrypted = PasetoUtility.EncryptBytes(_symmetricKey, payload, nonce);
+Assert.Equal(payload, PasetoUtility.DecryptBytes(_symmetricKey, encrypted));
 ```
