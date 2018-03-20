@@ -90,13 +90,13 @@ namespace Paseto.Tests
 		{
 			var testClaims = new PasteoInstance
 			{
-				Expiration = DateTime.UtcNow.AddSeconds(-1),
+				Expiration = DateTime.UtcNow.AddMinutes(-1),
 				Subject = "2986689",
 			};
 
 			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims), validateTimes: false));
 			Assert.Null(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
-			testClaims.Expiration = DateTime.UtcNow.AddSeconds(1);
+			testClaims.Expiration = DateTime.UtcNow.AddMinutes(1);
 			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
 		}
 
@@ -105,13 +105,13 @@ namespace Paseto.Tests
 		{
 			var testClaims = new PasteoInstance
 			{
-				NotBefore = DateTime.UtcNow.AddSeconds(1),
+				NotBefore = DateTime.UtcNow.AddMinutes(1),
 				Subject = "2986689",
 			};
 
 			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims), validateTimes: false));
 			Assert.Null(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
-			testClaims.NotBefore = DateTime.UtcNow.AddSeconds(-1);
+			testClaims.NotBefore = DateTime.UtcNow.AddMinutes(-1);
 			Assert.NotNull(PasetoUtility.Parse(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims)));
 		}
 
