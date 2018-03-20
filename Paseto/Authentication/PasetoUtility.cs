@@ -37,7 +37,7 @@ namespace Paseto.Authentication
 			return $"{header}{ToBase64Url(macBytes.Concat(encryptedPayload))}{footerToAppend}";
 		}
 
-		public static string Encrypt(byte[] symmetricKey, PasteoInstance payload, byte[] nonce = null) =>
+		public static string Encrypt(byte[] symmetricKey, PasetoInstance payload, byte[] nonce = null) =>
 			EncryptBytes(symmetricKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(payload.ToDictionary())), SimpleJson.SerializeObject(payload.Footer), nonce);
 
 
@@ -65,7 +65,7 @@ namespace Paseto.Authentication
 			};
 		}
 
-		public static PasteoInstance Decrypt(byte[] symmetricKey, string signedMessage, bool validateTimes = true)
+		public static PasetoInstance Decrypt(byte[] symmetricKey, string signedMessage, bool validateTimes = true)
 		{
 			var result = DecryptBytes(symmetricKey, signedMessage);
 			if (result == null)
@@ -99,7 +99,7 @@ namespace Paseto.Authentication
 			return createdPaseto;
 		}
 
-		public static string Sign(byte[] publicKey, byte[] privateKey, PasteoInstance claims)
+		public static string Sign(byte[] publicKey, byte[] privateKey, PasetoInstance claims)
 		{
 			return SignBytes(publicKey, privateKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(claims.ToDictionary())), SimpleJson.SerializeObject(claims.Footer));
 		}
@@ -134,7 +134,7 @@ namespace Paseto.Authentication
 			};
 		}
 
-		public static PasteoInstance Parse(byte[] publicKey, string signedMessage, bool validateTimes = true)
+		public static PasetoInstance Parse(byte[] publicKey, string signedMessage, bool validateTimes = true)
 		{
 			var result = ParseBytes(publicKey, signedMessage);
 			if (result == null)
@@ -143,7 +143,7 @@ namespace Paseto.Authentication
 			return ParsePayload(Encoding.UTF8.GetString(result.Payload), Encoding.UTF8.GetString(result.Footer), validateTimes);
 		}
 
-		internal static PasteoInstance ParsePayload(string payload, string footer, bool validateTimes = true)
+		internal static PasetoInstance ParsePayload(string payload, string footer, bool validateTimes = true)
 		{
 			IDictionary<string, object> payloadJson;
 			try
@@ -159,7 +159,7 @@ namespace Paseto.Authentication
 
 			var footerJson = footer == "" ? null : SimpleJson.DeserializeObject(footer) as IDictionary<string, object>;
 
-			var pasetoInstance = new PasteoInstance(payloadJson) { Footer = footerJson };
+			var pasetoInstance = new PasetoInstance(payloadJson) { Footer = footerJson };
 
 			if (validateTimes)
 			{

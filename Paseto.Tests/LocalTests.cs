@@ -41,7 +41,7 @@ namespace Paseto.Tests
 			Assert.Equal(footerText, PasetoUtility.ParseFooter(PasetoUtility.EncryptBytes(_symmetricKey, new byte[0], footerText)));
 
 			var footerJson = new Dictionary<string, object> { ["hello"] = "friend" };
-			Assert.Equal(footerJson, PasetoUtility.ParseFooterJson(PasetoUtility.Encrypt(_symmetricKey, new PasteoInstance { Footer = footerJson })));
+			Assert.Equal(footerJson, PasetoUtility.ParseFooterJson(PasetoUtility.Encrypt(_symmetricKey, new PasetoInstance { Footer = footerJson })));
 		}
 
 		[Theory]
@@ -59,7 +59,7 @@ namespace Paseto.Tests
 		{
 			var date = DateTime.UtcNow;
 
-			var claims = new PasteoInstance
+			var claims = new PasetoInstance
 			{
 				Issuer = "http://auth.example.com",
 				Subject = "2986689",

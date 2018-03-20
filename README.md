@@ -35,7 +35,7 @@ Install-Package Paseto
 using Paseto.Authentication;
 
 // Creating a token
-var claims = new PasteoInstance
+var claims = new PasetoInstance
 {
 	Issuer = "http://auth.example.com",
 	Subject = "2986689",
@@ -78,5 +78,5 @@ string footerText = "Hello friend";
 Assert.Equal(footerText, PasetoUtility.GetFooter(PasetoUtility.EncryptBytes(_symmetricKey, new byte[0], footerText)));
 
 var footerJson = new Dictionary<string, object> { ["key-id"] = "key10" };
-Assert.Equal(footerJson, PasetoUtility.GetFooterJson(PasetoUtility.Encrypt(_symmetricKey, new PasteoInstance { Footer = footerJson })));
+Assert.Equal(footerJson, PasetoUtility.GetFooterJson(PasetoUtility.Encrypt(_symmetricKey, new PasetoInstance { Footer = footerJson })));
 ```

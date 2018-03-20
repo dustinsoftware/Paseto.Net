@@ -54,7 +54,7 @@ namespace Paseto.Tests
 		{
 			var date = DateTime.UtcNow;
 
-			var claims = new PasteoInstance
+			var claims = new PasetoInstance
 			{
 				Issuer = "http://auth.example.com",
 				Subject = "2986689",
@@ -92,13 +92,13 @@ namespace Paseto.Tests
 			Assert.Equal(footerText, PasetoUtility.ParseFooter(PasetoUtility.SignBytes(_publicKey, _privateKey, new byte[0], footerText)));
 
 			var footerJson = new Dictionary<string, object> { ["hello"] = "friend" };
-			Assert.Equal(footerJson, PasetoUtility.ParseFooterJson(PasetoUtility.Sign(_publicKey, _privateKey, new PasteoInstance { Footer = footerJson })));
+			Assert.Equal(footerJson, PasetoUtility.ParseFooterJson(PasetoUtility.Sign(_publicKey, _privateKey, new PasetoInstance { Footer = footerJson })));
 		}
 
 		[Fact]
 		public void ExpiredTokenDoesNotParse()
 		{
-			var testClaims = new PasteoInstance
+			var testClaims = new PasetoInstance
 			{
 				Expiration = DateTime.UtcNow.AddMinutes(-1),
 				Subject = "2986689",
@@ -113,7 +113,7 @@ namespace Paseto.Tests
 		[Fact]
 		public void FutureTokenDoesNotParse()
 		{
-			var testClaims = new PasteoInstance
+			var testClaims = new PasetoInstance
 			{
 				NotBefore = DateTime.UtcNow.AddMinutes(1),
 				Subject = "2986689",
@@ -129,7 +129,7 @@ namespace Paseto.Tests
 		public void EmptyTokenRoundTrip()
 		{
 			PasetoUtility.Parse(_publicKey, PasetoUtility.SignBytes(_publicKey, _privateKey, Encoding.UTF8.GetBytes("{}")));
-			Assert.Equal("{}", Encoding.UTF8.GetString(PasetoUtility.ParseBytes(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, new PasteoInstance())).Payload));
+			Assert.Equal("{}", Encoding.UTF8.GetString(PasetoUtility.ParseBytes(_publicKey, PasetoUtility.Sign(_publicKey, _privateKey, new PasetoInstance())).Payload));
 		}
 
 		[Theory]

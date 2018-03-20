@@ -6,13 +6,13 @@ using Paseto.Internal.SimpleJson;
 
 namespace Paseto.Authentication
 {
-	public sealed class PasteoInstance
+	public sealed class PasetoInstance
 	{
-		public PasteoInstance()
+		public PasetoInstance()
 		{
 		}
 
-		public PasteoInstance(IDictionary<string, object> claims)
+		public PasetoInstance(IDictionary<string, object> claims)
 		{
 			if (claims == null)
 				throw new ArgumentNullException(nameof(claims));
