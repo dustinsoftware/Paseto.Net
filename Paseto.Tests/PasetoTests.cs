@@ -52,28 +52,46 @@ namespace Paseto.Tests
 		[Fact]
 		public void JsonDataRoundTrip()
 		{
-			var testClaims = new Dictionary<string, object>{
-				["iss"] = "http://auth.example.com",
-				["exp"] = DateTime.UtcNow.AddMinutes(10).ToString(Iso8601Format),
-				["sub"] = (long) 2986689,
-				["roles"] = new[] {"Admin", "User"}
+			var date = DateTime.UtcNow;
+
+			var claims = new PasteoInstance
+			{
+				Issuer = "http://auth.example.com",
+				Subject = "2986689",
+				Audience = "audience",
+				Expiration = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, date.Kind).AddMinutes(10),
+				NotBefore = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, date.Kind).AddMinutes(-10),
+				IssuedAt = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, date.Kind),
+				AdditionalClaims = new Dictionary<string, object>
+				{
+					["roles"] = new[] {"Admin", "User"}
+				},
+				Footer = new Dictionary<string, object>
+				{
+					["kid"] = "dpm0"
+				},
 			};
 
-			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
+			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims);
 			var parsedToken = PasetoUtility.Parse(_publicKey, token);
 
-			Assert.Equal(testClaims["iss"], parsedToken.Payload["iss"]);
-			Assert.Equal(testClaims["exp"], parsedToken.Payload["exp"]);
-			Assert.Equal(testClaims["sub"], parsedToken.Payload["sub"]);
-			Assert.Equal(testClaims["roles"], parsedToken.Payload["roles"]);
+			Assert.Equal(claims.Issuer, parsedToken.Issuer);
+			Assert.Equal(claims.Subject, parsedToken.Subject);
+			Assert.Equal(claims.Audience, parsedToken.Audience);
+			Assert.Equal(claims.Expiration, parsedToken.Expiration);
+			Assert.Equal(claims.NotBefore, parsedToken.NotBefore);
+			Assert.Equal(claims.IssuedAt, parsedToken.IssuedAt);
+			Assert.Equal(claims.AdditionalClaims, parsedToken.AdditionalClaims);
+			Assert.Equal(claims.Footer, parsedToken.Footer);
 		}
 
 		[Fact]
 		public void ExpiredTokenDoesNotParse()
 		{
-			var testClaims = new Dictionary<string, object>{
-				["exp"] = DateTime.UtcNow.AddSeconds(-1).ToString(Iso8601Format),
-				["sub"] = (long) 2986689,
+			var testClaims = new PasteoInstance
+			{
+				Expiration = DateTime.UtcNow.AddSeconds(-1),
+				Subject = "2986689",
 			};
 
 			string token = PasetoUtility.Sign(_publicKey, _privateKey, claims: testClaims);
@@ -96,7 +114,6 @@ namespace Paseto.Tests
 
 			return bytes;
 		}
-
 		private const string Iso8601Format = "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz";
 	}
 }

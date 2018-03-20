@@ -71,9 +71,9 @@ namespace Paseto.Authentication
 			return createdPaseto;
 		}
 
-		public static string Sign(byte[] publicKey, byte[] privateKey, IDictionary<string, object> claims, string footer = "")
+		public static string Sign(byte[] publicKey, byte[] privateKey, PasteoInstance claims)
 		{
-			return SignBytes(publicKey, privateKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(claims)), footer);
+			return SignBytes(publicKey, privateKey, Encoding.UTF8.GetBytes(SimpleJson.SerializeObject(claims.ToDictionary())), SimpleJson.SerializeObject(claims.Footer));
 		}
 
 		// https://github.com/paragonie/paseto/blob/63e2ddbdd2ac457a5e19ae3d815d892001c74de7/docs/01-Protocol-Versions/Version2.md#verify
@@ -106,7 +106,7 @@ namespace Paseto.Authentication
 			};
 		}
 
-		public static ParsedPaseto Parse(byte[] publicKey, string signedMessage, bool validateExpiration = true)
+		public static PasteoInstance Parse(byte[] publicKey, string signedMessage, bool validateExpiration = true)
 		{
 			var result = ParseBytes(publicKey, signedMessage);
 			if (result == null)
@@ -128,13 +128,9 @@ namespace Paseto.Authentication
 			}
 
 			string footerString = Encoding.UTF8.GetString(result.Footer);
-			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString);
+			var footerJson = footerString == "" ? null : SimpleJson.DeserializeObject(footerString) as IDictionary<string, object>;
 
-			return new ParsedPaseto
-			{
-				Payload = payloadJson as IDictionary<string, object>,
-				Footer = footerJson as IDictionary<string, object>,
-			};
+			return new PasteoInstance(payloadJson) { Footer = footerJson };
 		}
 
 		internal static void Assert(bool condition, string reason)
