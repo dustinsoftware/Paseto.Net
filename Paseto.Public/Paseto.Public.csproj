@@ -4,12 +4,12 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Title>Paseto.NET Public Authentication</Title>
     <Description>An implementation of PASETO (Platform-Agnostic Security Tokens). This library has no native dependencies, and only supports public authentication with Ed25519.</Description>
-    <Copyright>Copyright 2017 Dustin Masters</Copyright>
+    <Copyright>Copyright 2018 Dustin Masters</Copyright>
     <Authors>Dustin Masters</Authors>
     <AssemblyName>Paseto.Public</AssemblyName>
     <PackageId>Paseto.Public</PackageId>
     <PackageTags>paseto;netcore</PackageTags>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <PackageLicenseURL>https://opensource.org/licenses/MIT</PackageLicenseURL>
   </PropertyGroup>
 
