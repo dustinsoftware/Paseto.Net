@@ -57,14 +57,14 @@ namespace Paseto.Authentication
 		public string Subject { get; set; }
 		public string Audience { get; set; }
 
-		public DateTime? Expiration { get; set; }
-		public DateTime? NotBefore { get; set; }
-		public DateTime? IssuedAt { get; set; }
+		public DateTimeOffset? Expiration { get; set; }
+		public DateTimeOffset? NotBefore { get; set; }
+		public DateTimeOffset? IssuedAt { get; set; }
 		public string TokenIdentifier { get; set; }
 		public IDictionary<string, object> AdditionalClaims { get; set; }
 		public IDictionary<string, object> Footer { get; set; }
 
-		private static DateTime? ToDateTime(string date) => date == null ? default(DateTime?) :
+		private static DateTimeOffset? ToDateTime(string date) => date == null ? default(DateTime?) :
 			DateTime.ParseExact(
 				date,
 				date.EndsWith("Z", StringComparison.Ordinal) ? _iso8601FormatUtc : _iso8601Format,
