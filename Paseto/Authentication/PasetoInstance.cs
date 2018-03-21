@@ -74,5 +74,5 @@ namespace Paseto.Authentication
 		private const string _iso8601Format = "yyyy'-'MM'-'dd'T'HH':'mm':'sszzz";
 		private const string _iso8601FormatUtc = "yyyy'-'MM'-'dd'T'HH':'mm':'ssZ";
 		private static HashSet<string> _reservedKeys = new HashSet<string>(new[] { "iss", "sub", "aud", "exp", "nbf", "iat", "jti" });
-}
+	}
 }
