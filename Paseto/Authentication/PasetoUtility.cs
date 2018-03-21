@@ -176,7 +176,7 @@ namespace Paseto.Authentication
 		internal static void Assert(bool condition, string reason)
 		{
 			if (!condition)
-				throw new FormatException("The format of the message or signature was invalid. " + reason);
+				throw new PasetoFormatException("The format of the message or signature was invalid. " + reason);
 		}
 
 		// https://github.com/paragonie/paseto/blob/785723a02bc27e0e90821b0852d9e86573bbe63d/docs/01-Protocol-Versions/Common.md#authentication-padding
@@ -192,9 +192,18 @@ namespace Paseto.Authentication
 			.Replace('/', '_');
 
 		// Replace some characters in the base 64 string and add padding so .NET can parse it
-		internal static byte[] FromBase64Url(string source) =>
-			Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
-			.Replace('-', '+')
-			.Replace('_', '/'));
+		internal static byte[] FromBase64Url(string source)
+		{
+			try
+			{
+				return Convert.FromBase64String(source.PadRight((source.Length % 4) == 0 ? 0 : (source.Length + 4 - (source.Length % 4)), '=')
+					.Replace('-', '+')
+					.Replace('_', '/'));
+			}
+			catch (FormatException e)
+			{
+				throw new PasetoFormatException("The base64 encoding was invalid. " + e);
+			}
+		}
 	}
 }

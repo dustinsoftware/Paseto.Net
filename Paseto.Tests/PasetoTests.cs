@@ -152,6 +152,15 @@ namespace Paseto.Tests
 			Assert.Throws<PasetoFormatException>(() => PasetoUtility.Parse(_publicKey, token));
 		}
 
+		[Theory]
+		[InlineData("a")]
+		[InlineData("v2.public.a")]
+		[InlineData("v2.public.eyJjb25zdW1lck5hbWUiOiJBY2NvdW50IFNlcnZpY2VzIFRlc3QiLCJpc0FkbWluQ29uc3VtZXIiOnRydWUsInN1YiI6IjI5ODY2ODkiLCJleHAiOiIyMDE4LTAzLTIwVDIxOjAwOjE4KzAwOjAwIn2MSjOn5s71-r-lWGhcQrsnofAEJp6iLn0O71oTOKmu2kg2arP5kGvc7Yfy4ngArSJQApZOlxTyuPdfur3LVSYH.bnVsb")]
+		public void InvalidTokenThrows(string token)
+		{
+			Assert.Throws<PasetoFormatException>(() => PasetoUtility.ParseBytes(_publicKey, token));
+		}
+
 		[Fact]
 		public void HexString()
 		{
