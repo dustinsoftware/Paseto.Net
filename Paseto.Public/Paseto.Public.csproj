@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
     <Title>Paseto.NET Public Authentication</Title>
     <Description>An implementation of PASETO (Platform-Agnostic Security Tokens). This library has no native dependencies, and only supports public authentication with Ed25519.</Description>
     <Copyright>Copyright 2018 Dustin Masters</Copyright>
