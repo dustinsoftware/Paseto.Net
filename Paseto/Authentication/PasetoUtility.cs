@@ -79,7 +79,7 @@ namespace Paseto.Authentication
 			if (publicKey?.Length != 32)
 				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
 			if (privateKey?.Length != 32)
-				throw new ArgumentException(nameof(publicKey), "must be 32 bytes long");
+				throw new ArgumentException(nameof(privateKey), "must be 32 bytes long");
 			if (payload == null)
 				throw new ArgumentNullException(nameof(payload));
 			if (footer == null)
